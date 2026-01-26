@@ -1,0 +1,2112 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Ads Dashboard (Pro Suite - Optimized)</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <style>
+    :root{
+      --bg:#f5f5f7;
+      --card:#ffffff;
+      --text:#1d1d1f;
+      --muted:#6e6e73;
+      --line:#e5e5ea;
+      --shadow:0 10px 30px rgba(0,0,0,.06);
+      --radius:18px;
+      --accent:#0071e3;
+      --good:#1a7f37;
+      --bad:#b42318;
+      --warn:#b54708;
+      --chip:#f2f2f7;
+      --softGood: rgba(26,127,55,.10);
+      --softBad: rgba(180,35,24,.10);
+      --softWarn: rgba(181,71,8,.12);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,"PingFang SC","Microsoft YaHei",sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      font-weight: 500;
+      /* 保持微调后的字体大小 */
+      font-size: 12.8px;
+    }
+    
+    input, select, button, textarea {
+      font-weight: 500;
+      font-family: inherit;
+      font-size: 12.8px;
+    }
+
+    .app{
+      display:grid;
+      /* 保持原始布局宽度 */
+      grid-template-columns: 360px 1fr;
+      min-height:100vh;
+      gap:18px;
+      padding:18px;
+      max-width: 75vw;
+      margin: 0 auto;
+    }
+    .sidebar{
+      position:sticky;
+      top:18px;
+      height:calc(100vh - 36px);
+      overflow:auto;
+      background:rgba(255,255,255,.7);
+      backdrop-filter:saturate(180%) blur(16px);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      padding:16px;
+      box-shadow:var(--shadow);
+    }
+    .content{
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      min-width:0;
+    }
+    .header{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      padding:14px 16px;
+      border-radius:var(--radius);
+      background:rgba(255,255,255,.75);
+      border:1px solid var(--line);
+      box-shadow:var(--shadow);
+    }
+    .title{ display:flex; flex-direction:column; gap:4px; }
+    .title h1{
+      margin:0;
+      font-size:18.5px;
+      letter-spacing:-.2px;
+      font-weight:800;
+    }
+    .title .sub{
+      font-size:12.2px;
+      color:var(--muted);
+      line-height:1.35;
+      max-width: 900px;
+      font-weight: 500;
+    }
+    .actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      align-items:center;
+    }
+    .btn{
+      appearance:none;
+      border:1px solid var(--line);
+      background:#fff;
+      border-radius:999px;
+      padding:10px 12px;
+      font-size:12.7px;
+      cursor:pointer;
+      color:var(--text);
+      transition:transform .08s ease, background .2s ease, border-color .2s ease;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      box-shadow:0 6px 16px rgba(0,0,0,.06);
+      user-select:none;
+      white-space:nowrap;
+    }
+    .btn:hover{ background:#fbfbfd; border-color:#d2d2d7; }
+    .btn:active{ transform:scale(.98); }
+    .btn.primary{
+      border-color:rgba(0,113,227,.25);
+      background:rgba(0,113,227,.08);
+      color:#0b62c6;
+    }
+    .btn.danger{
+      border-color:rgba(180,35,24,.22);
+      background:rgba(180,35,24,.08);
+      color:#8a1f17;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap:14px;
+      min-width:0;
+    }
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:14px;
+      min-width:0;
+    }
+
+    .kpi{ grid-column: span 3; user-select:none; }
+    .kpi .label{ font-size:12.2px; color:var(--muted); display:flex; justify-content:space-between; align-items:center; gap:10px; font-weight: 500; }
+    .kpi .value{ margin-top:6px; font-size:22.5px; font-weight:800; letter-spacing:-.3px; }
+    .kpi .meta{ margin-top:4px; font-size:11.8px; color:var(--muted); display:flex; gap:8px; flex-wrap:wrap; font-weight: 500; }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:4px 8px;
+      border-radius:999px;
+      background:var(--chip);
+      border:1px solid var(--line);
+      font-size:11.8px;
+      color:var(--muted);
+      white-space:nowrap;
+      font-weight: 500;
+    }
+
+    .chartCard{ grid-column: span 12; }
+    .tableCard{ grid-column: span 12; }
+
+    .cardTitle{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-end;
+      gap:10px;
+      margin-bottom:10px;
+      flex-wrap:wrap;
+    }
+    .cardTitle h2{ margin:0; font-size:14.2px; letter-spacing:-.2px; font-weight: 700; }
+    .cardTitle .hint{ font-size:12.2px; color:var(--muted); font-weight: 500; }
+    .cardTitle .rightTools{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+
+    .chartWrap{ position:relative; width:100%; height:260px; }
+    .chartWrap.tall{ height:320px; }
+
+    .fieldGroup{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      padding-bottom:12px;
+      border-bottom:1px solid var(--line);
+      margin-bottom:12px;
+    }
+    .fieldGroup:last-child{ border-bottom:none; padding-bottom:0; margin-bottom:0; }
+    .fieldRow{ display:flex; flex-direction:column; gap:6px; }
+
+    label{ font-size:12.2px; color:var(--muted); font-weight: 500; }
+    input[type="text"], input[type="date"], input[type="number"], select{
+      width:100%;
+      padding:10px 10px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:#fff;
+      font-size:12.7px;
+      outline:none;
+      transition:border-color .2s ease, box-shadow .2s ease;
+      appearance:none;
+    }
+    input[type="text"]:focus, input[type="date"]:focus, input[type="number"]:focus, select:focus{
+      border-color:rgba(0,113,227,.45);
+      box-shadow:0 0 0 4px rgba(0,113,227,.12);
+    }
+    .selectWrap{ position:relative; }
+    .selectWrap:after{
+      content:"▾";
+      position:absolute;
+      right:12px;
+      top:50%;
+      transform:translateY(-50%);
+      color:var(--muted);
+      pointer-events:none;
+      font-size:12.2px;
+      font-weight: 700;
+    }
+
+    .row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .row3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+    .small{ font-size:11.8px; color:var(--muted); line-height:1.35; font-weight: 500; }
+
+    .chips{ display:flex; gap:8px; flex-wrap:wrap; }
+    .chipBtn{
+      border:1px solid var(--line);
+      background:#fff;
+      border-radius:999px;
+      padding:8px 10px;
+      font-size:12.2px;
+      cursor:pointer;
+    }
+    .chipBtn.active{
+      border-color:rgba(0,113,227,.35);
+      background:rgba(0,113,227,.08);
+      color:#0b62c6;
+      font-weight: 600;
+    }
+
+    .fileList{
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:#fff;
+      padding:10px;
+      max-height:180px;
+      overflow:auto;
+    }
+
+    .table-container{
+      overflow:auto;
+      max-height:620px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:var(--card);
+    }
+
+    table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+    }
+    thead th{
+      position:sticky; top:0;
+      background:var(--card);
+      border-bottom:1px solid var(--line);
+      font-size:12.2px;
+      color:var(--muted);
+      text-align:left;
+      padding:10px 10px;
+      white-space:nowrap;
+      cursor:pointer;
+      user-select:none;
+      z-index:2;
+      font-weight: 600;
+    }
+    tbody td{
+      padding:10px 10px;
+      border-bottom:1px solid rgba(229,229,234,.7);
+      font-size:12.8px;
+      vertical-align:top;
+    }
+    tbody tr:hover{ background:#fbfbfd; }
+    tbody tr:last-child td{ border-bottom:none; }
+
+    .tag{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      font-size:11.8px;
+      white-space:nowrap;
+      user-select:none;
+      font-weight: 600;
+    }
+    .tag.good{ color:var(--good); background:var(--softGood); border-color:rgba(26,127,55,.18); }
+    .tag.bad{ color:var(--bad); background:var(--softBad); border-color:rgba(180,35,24,.18); }
+    .tag.warn{ color:var(--warn); background:var(--softWarn); border-color:rgba(181,71,8,.20); }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+
+    .seg{
+      display:inline-flex;
+      border:1px solid var(--line);
+      background:#fff;
+      border-radius:999px;
+      overflow:hidden;
+      box-shadow:0 6px 16px rgba(0,0,0,.06);
+    }
+    .segBtn{
+      border:0;
+      background:transparent;
+      padding:8px 12px;
+      font-size:12.2px;
+      cursor:pointer;
+      color:var(--muted);
+      font-weight: 500;
+    }
+    .segBtn.active{
+      background:rgba(0,113,227,.10);
+      color:#0b62c6;
+      font-weight: 600;
+    }
+
+    .miniInput{
+      width:110px !important;
+      padding:8px 10px !important;
+      border-radius:999px !important;
+      font-size:12.2px !important;
+    }
+    .miniSelect{
+      width:150px !important;
+      padding:8px 10px !important;
+      border-radius:999px !important;
+      font-size:12.2px !important;
+    }
+
+    #autoManualTable th:last-child, 
+    #autoManualTable td:last-child,
+    #longTailTable th:last-child,
+    #longTailTable td:last-child,
+    #weekdayTable th:last-child,
+    #weekdayTable td:last-child,
+    #cpcDistTable th:last-child,
+    #cpcDistTable td:last-child,
+    #cvrDistTable th:last-child,
+    #cvrDistTable td:last-child {
+      text-align: left; 
+    }
+    .bar-row {
+        display: flex; 
+        align-items: center; 
+        justify-content: flex-start; 
+        gap: 8px; 
+        font-size: 11.5px;
+        width: 100%;
+        max-width: 200px;
+    }
+    .bar-track {
+        flex: 1;
+        height: 6px; 
+        background: #e5e5ea; 
+        border-radius: 3px; 
+        overflow: hidden; 
+        display: flex;
+    }
+
+    @media (max-width: 1400px){
+      .app{ max-width: 100vw; }
+    }
+    @media (max-width: 1100px){
+      .app{ grid-template-columns:1fr; max-width:100vw; }
+      .sidebar{ position:relative; height:auto; }
+      .kpi{ grid-column: span 6; }
+      .chartCard{ grid-column: span 12; }
+    }
+    @media (max-width: 650px){
+      .kpi{ grid-column: span 12; }
+      .actions{ justify-content:flex-start; }
+      .row3{ grid-template-columns:1fr; }
+      .miniInput, .miniSelect{ width:100% !important; border-radius:12px !important; }
+    }
+  </style>
+</head>
+
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="fieldGroup">
+      <div class="fieldRow">
+        <label>导入同类报表（多文件 CSV / XLSX）</label>
+        <input id="fileInput" type="file" accept=".csv,.xlsx,.xls" multiple />
+        <div class="small">默认追加合并；默认开启去重；导入过程/错误请看“导入日志”</div>
+      </div>
+
+      <div class="row2">
+        <div class="fieldRow">
+          <label>合并模式</label>
+          <div class="selectWrap">
+            <select id="mergeMode">
+              <option value="append" selected>追加合并（Append）</option>
+              <option value="replace">替换（Replace）</option>
+            </select>
+          </div>
+        </div>
+        <div class="fieldRow">
+          <label>去重</label>
+          <div class="selectWrap">
+            <select id="dedupeMode">
+              <option value="on" selected>开启（推荐）</option>
+              <option value="off">关闭</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="fieldRow">
+        <label>已导入文件</label>
+        <div id="fileList" class="fileList"><div class="small">暂无</div></div>
+      </div>
+
+      <div class="fieldRow">
+        <label>导入日志</label>
+        <div id="logBox" class="fileList" style="max-height:220px"><div class="small">暂无</div></div>
+      </div>
+
+      <div class="row2">
+        <div class="fieldRow">
+          <label>日期开始</label>
+          <input id="dateStart" type="date" />
+        </div>
+        <div class="fieldRow">
+          <label>日期结束</label>
+          <input id="dateEnd" type="date" />
+        </div>
+      </div>
+
+      <div class="chips">
+        <button class="chipBtn" data-range="yesterday" type="button">昨天</button>
+        <button class="chipBtn" data-range="7d" type="button">近7天</button>
+        <button class="chipBtn" data-range="30d" type="button">近30天</button>
+        <button class="chipBtn" data-range="mtd" type="button">本月</button>
+        <button class="chipBtn" data-range="all" type="button">全部</button>
+      </div>
+    </div>
+
+    <div class="fieldGroup">
+      <div class="fieldRow">
+        <label>来源文件（Source File）</label>
+        <div class="selectWrap"><select id="filterSource"></select></div>
+      </div>
+
+      <div class="fieldRow">
+        <label>广告组合（Portfolio）</label>
+        <div class="selectWrap"><select id="filterPortfolio"></select></div>
+      </div>
+      <div class="fieldRow">
+        <label>广告活动（Campaign）</label>
+        <div class="selectWrap"><select id="filterCampaign"></select></div>
+      </div>
+      <div class="fieldRow">
+        <label>广告组（Ad Group）</label>
+        <div class="selectWrap"><select id="filterAdGroup"></select></div>
+      </div>
+      <div class="fieldRow">
+        <label>投放（Targeting）</label>
+        <div class="selectWrap"><select id="filterTargeting"></select></div>
+      </div>
+      <div class="fieldRow">
+        <label>匹配类型（Match Type）</label>
+        <div class="selectWrap"><select id="filterMatchType"></select></div>
+      </div>
+
+      <div class="fieldRow">
+        <label>客户搜索词（Search Term）模糊搜索</label>
+        <input id="filterSearchTerm" type="text" placeholder="例如: blue light / magnification / women / cat eye / b07ybhgt31" />
+      </div>
+      <div class="small">筛选改动将自动生效（无需点击应用）</div>
+    </div>
+
+    <div class="fieldGroup">
+      <div class="fieldRow">
+        <label>榜单聚合维度</label>
+        <div class="selectWrap">
+          <select id="rankBy">
+            <option value="searchTerm" selected>客户搜索词（Search Term）</option>
+            <option value="searchTermRoot">Search Term Root（词根聚类）</option>
+            <option value="targeting">投放（Targeting）</option>
+            <option value="campaign">广告活动（Campaign）</option>
+            <option value="adGroup">广告组（Ad Group）</option>
+          </select>
+        </div>
+        <div class="small">
+          Root 规则：去停用词 + 同义词归一 + 保留倍率（如 2.0）+ 合并短语（blue light / cat eye / spring hinge）
+        </div>
+      </div>
+
+      <div class="row2">
+        <div class="fieldRow">
+          <label>Top N</label>
+          <input id="rankTopN" type="number" step="1" value="30" />
+        </div>
+        <div class="fieldRow">
+          <label>最大导入行数（防卡死）</label>
+          <input id="maxRows" type="number" step="1000" value="250000" />
+        </div>
+      </div>
+    </div>
+
+    <div class="fieldGroup">
+      <div class="fieldRow">
+        <label>自动判定规则（可调）</label>
+        <div class="small">在“榜单”层面打标：NEGATE / MIGRATE / KEEP，并给出理由；导出仅导出 NEGATE</div>
+      </div>
+
+      <div class="row3">
+        <div class="fieldRow">
+          <label>否定花费 ≥</label>
+          <input id="ruleSpendNeg" type="number" step="0.01" value="30" />
+        </div>
+        <div class="fieldRow">
+          <label>否定点击量 ≥</label>
+          <input id="ruleClicksNeg" type="number" step="1" value="20" />
+        </div>
+        <div class="fieldRow">
+          <label>否定 ROAS &lt;</label>
+          <input id="ruleRoasNeg" type="number" step="0.1" value="1.5" />
+        </div>
+      </div>
+
+      <div class="row3">
+        <div class="fieldRow">
+          <label>保留 ROAS ≥</label>
+          <input id="ruleRoasKeep" type="number" step="0.1" value="3" />
+        </div>
+        <div class="fieldRow">
+          <label>保留订单数 ≥</label>
+          <input id="ruleOrdersKeep" type="number" step="1" value="2" />
+        </div>
+        <div class="fieldRow">
+          <label>迁移 ROAS ≥</label>
+          <input id="ruleRoasMigrateMin" type="number" step="0.1" value="2" />
+        </div>
+      </div>
+
+      <div class="row2">
+        <div class="fieldRow">
+          <label>导出范围</label>
+          <div class="selectWrap">
+            <select id="exportScope">
+              <option value="rank" selected>当前榜单（Top N）</option>
+              <option value="view">当前视图（全部分组）</option>
+            </select>
+          </div>
+        </div>
+        <div class="fieldRow">
+          <label>否定匹配类型</label>
+          <div class="selectWrap">
+            <select id="exportNegMatch">
+              <option value="phrase" selected>PHRASE（推荐）</option>
+              <option value="exact">EXACT（更精准）</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="row2">
+        <button class="btn primary" id="btnExportNeg" type="button">导出否定词 CSV（仅 NEGATE）</button>
+        <button class="btn" id="btnRuleReset" type="button">重置默认规则</button>
+      </div>
+
+      <div class="small">
+        导出限制：只有榜单维度为 Search Term / Root 时允许导出（避免导出 Campaign/AdGroup 之类的名字当否定词）
+      </div>
+    </div>
+
+    <div class="fieldGroup">
+      <div class="fieldRow">
+        <label>操作</label>
+      </div>
+      <div class="fieldRow"><button class="btn" id="btnReset" type="button">重置筛选</button></div>
+      <div class="fieldRow"><button class="btn danger" id="btnClearAll" type="button">清空已导入数据</button></div>
+    </div>
+  </aside>
+
+  <main class="content">
+    <section class="header">
+      <div class="title">
+        <h1>Ads Performance Dashboard</h1>
+        <div class="sub" id="subtitle">未导入数据。请导入同类报表（支持多文件）。</div>
+      </div>
+      <div class="actions">
+        <button class="btn" id="btnCheck" type="button">依赖自检</button>
+        <button class="btn" id="btnDemo" type="button">载入演示数据（两文件合并）</button>
+      </div>
+    </section>
+
+    <section class="grid" id="kpiGrid"></section>
+
+    <section class="grid">
+      
+      <div class="card chartCard">
+        <div class="cardTitle">
+          <h2>每日趋势</h2>
+          <div class="hint">花费 / 销售额 / 订单数 / ACOS / ROAS</div>
+        </div>
+        <div class="chartWrap tall"><canvas id="trendChart"></canvas></div>
+      </div>
+
+      <div class="card tableCard" id="autoManualCard">
+        <div class="cardTitle">
+          <h2>自动/手动广告对比</h2>
+          <div class="hint">手动: Broad/Phrase/Exact; 自动: 其他</div>
+        </div>
+        <div class="table-container">
+          <table id="autoManualTable">
+            <thead>
+              <tr>
+                <th>指标</th>
+                <th>自动 (Auto)</th>
+                <th>手动 (Manual)</th>
+                <th>占比 (Auto / Manual)</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card tableCard">
+        <div class="cardTitle">
+          <h2>周维度分析 (Weekday Performance)</h2>
+          <div class="hint">发现一周中的最佳销售日/亏损日 (Mon-Sun)</div>
+        </div>
+        <div class="table-container">
+          <table id="weekdayTable">
+            <thead>
+              <tr>
+                <th>星期</th>
+                <th style="width:200px;">销售额热度</th>
+                <th>花费</th>
+                <th>销售额</th>
+                <th>订单数</th>
+                <th>ROAS</th>
+                <th>ACOS</th>
+                <th>CPC</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card tableCard">
+        <div class="cardTitle">
+          <h2>CPC 区间效能分析 (CPC Distribution)</h2>
+          <div class="hint">发现 ROAS 最高的“甜点”出价区间 (Sweet Spot)</div>
+        </div>
+        <div class="table-container">
+          <table id="cpcDistTable">
+            <thead>
+              <tr>
+                <th>CPC 区间</th>
+                <th style="width:200px;">销售额占比</th>
+                <th>花费</th>
+                <th>销售额</th>
+                <th>订单数</th>
+                <th>ROAS</th>
+                <th>ACOS</th>
+                <th>CVR</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="small" style="margin-top:10px;">
+          说明：根据每个词的实际平均 CPC 归类。1.00-2.00 区间已按 0.1 细分，助你精准定位最佳出价。
+        </div>
+      </div>
+
+      <div class="card tableCard">
+        <div class="cardTitle">
+          <h2>转化率阶梯分析 (CVR Efficiency Tiers)</h2>
+          <div class="hint">流量质量检测：0转化(浪费) vs 高转化(金矿)</div>
+        </div>
+        <div class="table-container">
+          <table id="cvrDistTable">
+            <thead>
+              <tr>
+                <th>转化率 (CVR) 区间</th>
+                <th style="width:200px;">花费占比 (Spend Share)</th>
+                <th>花费</th>
+                <th>销售额</th>
+                <th>订单数</th>
+                <th>ROAS</th>
+                <th>ACOS</th>
+                <th>CPC</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="small" style="margin-top:10px;">
+          说明：CVR=0% 的区间是纯浪费，重点检查；CVR > 20% 的区间是高意图流量，应检查是否还有提价/扩词空间。
+        </div>
+      </div>
+
+      <div class="card tableCard">
+        <div class="cardTitle">
+          <h2>榜单</h2>
+          <div class="rightTools">
+            <div class="seg" role="tablist" aria-label="Type Filter">
+              <button id="btnTypeAll" class="segBtn active" data-type="all" type="button">全部</button>
+              <button id="btnTypeKw" class="segBtn" data-type="keyword" type="button">关键词</button>
+              <button id="btnTypeAsin" class="segBtn" data-type="asin" type="button">ASIN</button>
+            </div>
+
+            <span class="tag bad">否定</span>
+            <span class="tag warn">迁移</span>
+            <span class="tag good">保留</span>
+            <span class="hint">点击表头排序</span>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table id="rankTable">
+            <thead>
+              <tr>
+                <th data-sort="name">名称</th>
+                <th data-sort="spend">花费</th>
+                <th data-sort="sales">销售额</th>
+                <th data-sort="orders">订单数</th>
+                <th data-sort="impr">展示量</th>
+                <th data-sort="clicks">点击量</th>
+                <th data-sort="ctr">点击率</th>
+                <th data-sort="cpc">点击成本</th>
+                <th data-sort="cvr">转化率</th>
+                <th data-sort="acos">ACOS</th>
+                <th data-sort="roas">ROAS</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="small" style="margin-top:10px;">
+          口径：ACOS=花费/销售额；ROAS=销售额/花费；CTR=点击量/展示量；CVR=订单数/点击量
+        </div>
+      </div>
+
+      <div class="card tableCard">
+        <div class="cardTitle">
+          <h2>词频分析（Word Frequency Analysis）</h2>
+          <div class="rightTools">
+            <div class="seg" role="tablist" aria-label="Word Frequency Mode">
+              <button class="segBtn active" data-wf="token" type="button">Token</button>
+              <button class="segBtn" data-wf="bigram" type="button">2-gram</button>
+              <button class="segBtn" data-wf="trigram" type="button">3-gram</button>
+              <button class="segBtn" data-wf="mag" type="button">倍率</button>
+            </div>
+            <span class="pill">Min Freq</span>
+            <input id="wfMinFreq" class="miniInput" type="number" step="1" value="3" title="最小出现次数" />
+            <span class="pill">Min Spend</span>
+            <input id="wfMinSpend" class="miniInput" type="number" step="0.01" value="10" title="最小花费" />
+            <span class="hint">点击表头排序，点击词条搜索</span>
+          </div>
+        </div>
+
+        <div class="table-container" style="max-height:480px;">
+          <table id="wfTable">
+            <thead>
+              <tr>
+                <th data-sort="word">词</th>
+                <th data-sort="freq">频次</th>
+                <th data-sort="spend">花费</th>
+                <th data-sort="orders">订单</th>
+                <th data-sort="roas">ROAS</th>
+                <th data-sort="acos">ACOS</th>
+                <th data-sort="action">动作</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="small" style="margin-top:10px;">
+          建议：2-gram 更贴近“意图短语”，更适合做否词根/迁移 Exact；倍率用于判断 1.5/2.0/2.5 哪个更赚钱
+        </div>
+      </div>
+
+      <div class="card tableCard" id="longTailCard">
+        <div class="cardTitle">
+          <h2>长尾词挖掘 (Long-Tail Keyword Mining)</h2>
+          <div class="rightTools">
+             <span class="pill">单词数 ≥</span>
+             <input id="ltMinWords" class="miniInput" type="number" step="1" value="3" title="Search Term 包含的单词数" />
+             <span class="pill">订单 ≥</span>
+             <input id="ltMinOrders" class="miniInput" type="number" step="1" value="2" title="至少产生订单数" />
+             <span class="pill">ROAS ≥</span>
+             <input id="ltMinRoas" class="miniInput" type="number" step="0.1" value="2.0" title="ROAS 门槛" />
+             <button class="btn primary" id="btnExportLongTail" type="button">导出长尾词 CSV</button>
+          </div>
+        </div>
+        <div class="table-container" style="max-height:480px;">
+          <table id="longTailTable">
+            <thead>
+              <tr>
+                <th>搜索词 (Search Term)</th>
+                <th>单词数</th>
+                <th>花费</th>
+                <th>销售额</th>
+                <th>订单数</th>
+                <th>ROAS</th>
+                <th>ACOS</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="small" style="margin-top:10px;">
+          逻辑：筛选出非 ASIN、单词数达标、且有出单记录的精准长尾词。建议将高 ROAS 的长尾词投放 Exact (精准匹配)。
+        </div>
+      </div>
+
+      <div class="card tableCard">
+        <div class="cardTitle">
+          <h2>加价词 & 否定词清单（区分 Keyword / ASIN）</h2>
+          <div class="rightTools">
+            <div class="seg" role="tablist" aria-label="Action Type Filter">
+              <button class="segBtn active" id="btnActAll" data-act="all" type="button">全部</button>
+              <button class="segBtn" id="btnActKw" data-act="keyword" type="button">关键词</button>
+              <button class="segBtn" id="btnActAsin" data-act="asin" type="button">ASIN</button>
+            </div>
+
+            <span class="pill">加价</span>
+            <input id="bidSpend" class="miniInput" type="number" step="0.01" value="20" title="BID UP Spend ≥" />
+            <input id="bidOrders" class="miniInput" type="number" step="1" value="2" title="BID UP Orders ≥" />
+            <input id="bidRoas" class="miniInput" type="number" step="0.1" value="3.5" title="BID UP ROAS ≥" />
+            <select id="bidIntensity" class="miniSelect" title="加价建议强度">
+              <option value="auto" selected>自动 (ROAS 分层)</option>
+              <option value="10">统一 +10%</option>
+              <option value="20">统一 +20%</option>
+              <option value="30">统一 +30%</option>
+            </select>
+            <button class="btn primary" id="btnExportBidUp" type="button">导出加价词 CSV</button>
+          </div>
+        </div>
+
+        <div class="grid" style="grid-template-columns: repeat(12, 1fr); gap:14px;">
+          <div class="card" style="grid-column: span 6;">
+            <div class="cardTitle" style="margin-bottom:8px;">
+              <h2>加价词（BID UP）</h2>
+              <div class="hint">满足 花费/订单数/ROAS 阈值才入选（随筛选自动刷新）</div>
+            </div>
+            <div class="table-container" style="max-height: 420px;">
+              <table id="bidUpTable">
+                <thead>
+                  <tr>
+                    <th>类型</th>
+                    <th>名称</th>
+                    <th>花费</th>
+                    <th>订单数</th>
+                    <th>ROAS</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <div class="small" style="margin-top:10px;">
+              建议用途：加价 / 提预算 / 迁移到精确（或单独广告组）
+            </div>
+          </div>
+
+          <div class="card" style="grid-column: span 6;">
+            <div class="cardTitle" style="margin-bottom:8px;">
+              <h2>否定词（NEGATE）</h2>
+              <div class="hint">仅当维度为 搜索词 / 词根 时生成否定建议</div>
+            </div>
+            <div class="table-container" style="max-height: 420px;">
+              <table id="negListTable">
+                <thead>
+                  <tr>
+                    <th>类型</th>
+                    <th>名称</th>
+                    <th>花费</th>
+                    <th>订单数</th>
+                    <th>ROAS</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <div class="small" style="margin-top:10px;">
+              提醒：导出否定词仍以左侧“导出否定词 CSV（仅 NEGATE）”为准
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+/** =========================
+ * Utils
+ * ========================= */
+const $ = (id) => document.getElementById(id);
+const fmtMoney = (v) => isFinite(v) ? new Intl.NumberFormat("en-US",{maximumFractionDigits:2}).format(v) : "0";
+const fmtInt = (v) => new Intl.NumberFormat("en-US",{maximumFractionDigits:0}).format(v||0);
+const fmtPct = (v) => (isFinite(v) ? (v*100).toFixed(2)+"%" : "0.00%");
+
+const safeNum = (x) => {
+  if (typeof x === "number") return isFinite(x) ? x : 0;
+  const s = String(x ?? "").trim();
+  if (!s) return 0;
+  const isPercent = s.includes("%");
+  const n = Number(s.replace(/[%,$]/g,"").replace(/,/g,""));
+  if (isFinite(n)) return isPercent ? n / 100 : n;
+  return 0;
+};
+
+const toISODate = (d) => {
+  if (typeof d === "number" && isFinite(d)) {
+    const dt = new Date(Math.round((d - 25569) * 86400 * 1000));
+    return isNaN(dt) ? "" : dt.toISOString().slice(0,10);
+  }
+  const dt = new Date(d);
+  return isNaN(dt) ? "" : dt.toISOString().slice(0,10);
+};
+
+const escapeHtml = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[c]);
+const clamp = (v,min,max)=>Math.max(min, Math.min(max, v));
+const setSubtitle = (text)=>$("subtitle").textContent = text;
+const debounce = (fn, wait=250)=>{let t; return (...args)=>{clearTimeout(t); t=setTimeout(()=>fn(...args),wait);};};
+
+const logBox = $("logBox");
+const clearLog = ()=>logBox.innerHTML = "";
+const log = (msg, level="info")=>{
+  const t = new Date(), stamp = `${String(t.getHours()).padStart(2,"0")}:${String(t.getMinutes()).padStart(2,"0")}:${String(t.getSeconds()).padStart(2,"0")}`;
+  const line = document.createElement("div");
+  line.className = "small"; line.style.cssText = "padding:6px 6px;border-bottom:1px solid rgba(229,229,234,.7);";
+  if (level==="bad") line.style.color = "#b42318";
+  if (level==="warn") line.style.color = "#b54708";
+  if (level==="good") line.style.color = "#1a7f37";
+  line.textContent = `[${stamp}] ${msg}`;
+  logBox.prepend(line);
+};
+
+const libsCheck = () => {
+  const missing = [];
+  if (typeof Papa === "undefined") missing.push("PapaParse(Papa)");
+  if (typeof XLSX === "undefined") missing.push("XLSX(xlsx)");
+  if (typeof Chart === "undefined") missing.push("Chart.js(Chart)");
+  if (missing.length) log("依赖库未加载：" + missing.join(", ") + "。原因多为网络限制 / CDN 被拦。解决方案：换网络，或改为本地引入 3 个 JS 文件。", "bad");
+  else log("依赖库 OK（PapaParse / XLSX / Chart.js）", "good");
+  return !missing.length;
+};
+
+const downloadText = (filename, text) => {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], {type:"text/plain;charset=utf-8"}));
+  a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(a.href);
+};
+const toCSV = (rows) => rows.map(r => r.map(v => {
+  const s = String(v ?? "");
+  return /[",\n]/.test(s) ? `"${s.replaceAll('"','""')}"` : s;
+}).join(",")).join("\n");
+
+/** =========================
+ * Root Mining
+ * ========================= */
+const STOP_WORDS = new Set("a,an,the,and,or,to,for,of,in,on,at,with,without,from,by,is,are,was,were,your,my,our,their,his,her,its,this,that,these,those,you,me,we,they,pack,set,pairs,pair,pcs,piece,pieces,new,best,top,sale,deal,gift,men,man,male,women,woman,female,unisex,adult,adults,kids,kid,glasses,glass,eyeglasses,eyewear".split(','));
+const SYNONYM_MAP = [
+  { re: /\breaders?\b/g, to: "reading glasses" }, { re: /\bmagnification\b/g, to: "magnify" },
+  { re: /\bmagnifying\b/g, to: "magnify" }, { re: /\bblue\-?light\b/g, to: "blue light" },
+  { re: /\banti\-?blue\b/g, to: "blue light" }, { re: /\bcomputer\b/g, to: "screen" },
+  { re: /\blaptop\b/g, to: "screen" }, { re: /\bpc\b/g, to: "screen" },
+  { re: /\bspring\-?hinge\b/g, to: "spring hinge" }, { re: /\bcat\-?eye\b/g, to: "cat eye" },
+  { re: /\bprogressive\b/g, to: "progressive" }
+];
+const PHRASES = ["blue light", "cat eye", "spring hinge", "anti glare", "scratch resistant"];
+const MAG_RE = /\b([1-3](?:\.\d{1,2})?)\b/g;
+
+const PHRASE_REGEXES = PHRASES.map(p => ({
+  re: new RegExp("\\b" + p.replace(/\s+/g, "\\s+") + "\\b", "g"),
+  to: p.replace(/\s+/g, "_")
+}));
+
+const normalizeTextBase = (s) => {
+  let x = (s || "").toLowerCase().replace(/[\u2010-\u2015]/g, "-");
+  SYNONYM_MAP.forEach(m => { x = x.replace(m.re, m.to); });
+  PHRASE_REGEXES.forEach(m => { x = x.replace(m.re, m.to); });
+  return x.replace(/[^a-z0-9._\s]/g, " ").replace(/\s+/g, " ").trim();
+};
+
+const rootCache = new Map();
+const searchTermToRoot = (term) => {
+  if (!term) return "(blank)";
+  if (rootCache.has(term)) return rootCache.get(term);
+  const base = normalizeTextBase(term);
+  const mags = [...(base.match(MAG_RE) || [])].map(Number).filter(n => n >= 1 && n <= 4).map(String);
+  const tokens = base.split(" ").filter(Boolean);
+  const kept = tokens.filter(t => !(/^\d+(\.\d+)?$/.test(t) || STOP_WORDS.has(t) || (t.length > 4 && t.endsWith("s") && (t=t.slice(0,-1)))));
+  const root = [...new Set(kept), ...new Set(mags.map(v=>`+${v}`))].join(" | ").trim();
+  const res = root || "(blank)";
+  if (rootCache.size < 100000) rootCache.set(term, res);
+  return res;
+};
+const rootToPhrase = (root) => (String(root || "").trim() || "(blank)") === "(blank)" ? "" : root.split("|").map(x => x.trim()).filter(Boolean).map(p => p.startsWith("+") ? p.slice(1) : p).join(" ").replace(/\s+/g," ").trim();
+
+/** =========================
+ * Word Frequency
+ * ========================= */
+let WF_MODE = "token";
+let wfSort = { key: "spend", dir: "desc" };
+
+const tokenize = (s) => normalizeTextBase(s).split(" ").filter(t => t && !STOP_WORDS.has(t));
+const ngrams = (tokens, n) => tokens.length < n ? [] : Array.from({length: tokens.length - n + 1}, (_, i) => tokens.slice(i, i + n).join(" "));
+const extractMagnification = (s) => [...String(s || "").matchAll(/\b([1-4](?:\.\d{1,2})?)\b/g)].map(m => m[1]);
+
+/** =========================
+ * Column mapping
+ * ========================= */
+const COL_MAP_ALIASES = {
+  date: ["日期","Date","Day","Report Date"],
+  hour: ["Start Time", "Hour of Day", "Hour", "小时", "Start Date"], // Added Hour support
+  portfolio: ["广告组合名称","Portfolio name","Portfolio","Portfolio Name"],
+  campaign: ["广告活动名称","Campaign name","Campaign","Campaign Name"],
+  adGroup: ["广告组名称","Ad group name","Ad group","Ad Group","Ad Group Name"],
+  targeting: ["投放","Targeting","Keyword or Product Targeting"],
+  matchType: ["匹配类型","Match type","Match Type"],
+  searchTerm: ["客户搜索词","Customer search term","Search term","Search Term"],
+  impr: ["展示量","Impressions","Impr"],
+  clicks: ["点击量","Clicks"],
+  spend: ["花费","Spend","Cost"],
+  sales7d: ["7天总销售额","7 Day Total Sales","7-day total sales","7 day total sales"],
+  orders7d: ["7天总订单数","7天总订单数(#)","7天总订单数 (#)","7天总订单数（#）","7 Day Total Orders (#)","7-day total orders","7 day total orders"],
+  ctr: ["点击率","CTR"],
+  cpc: ["每次点击费用","CPC","Cost per click"],
+  cvr: ["7天的转化率","7 Day Conversion Rate","7-day conversion rate","7 day conversion rate"],
+  acos: ["ACOS","Acos"],
+  roas: ["ROAS","Roas"],
+};
+
+const pickCol = (header, aliases) => {
+  const normHeader = header.map(h => String(h).trim().toLowerCase());
+  for (const a of aliases) {
+    const target = String(a).trim().toLowerCase();
+    const idx = normHeader.indexOf(target);
+    if (idx >= 0) return header[idx];
+  }
+  return null;
+};
+const buildMap = (rows) => {
+  const header = rows.length ? Object.keys(rows[0]) : [];
+  const map = {};
+  for (const key in COL_MAP_ALIASES) map[key] = pickCol(header, COL_MAP_ALIASES[key]);
+  if (!map.date) throw new Error("未识别到日期列（Date/日期）。请检查你的报表列名。");
+  return map;
+};
+const normalizeRow = (raw, map, sourceFile) => {
+  const impr = safeNum(raw[map.impr]), clicks = safeNum(raw[map.clicks]), spend = safeNum(raw[map.spend]);
+  const sales = safeNum(raw[map.sales7d]), orders = safeNum(raw[map.orders7d]);
+  
+  // Hour Parsing logic removed as requested in previous turn, keeping it clean.
+  let h = -1;
+
+  return {
+    sourceFile, date: toISODate(raw[map.date]),
+    hour: h,
+    portfolio: String(raw[map.portfolio] ?? "").trim(), campaign: String(raw[map.campaign] ?? "").trim(),
+    adGroup: String(raw[map.adGroup] ?? "").trim(), targeting: String(raw[map.targeting] ?? "").trim(),
+    matchType: String(raw[map.matchType] ?? "").trim(), searchTerm: String(raw[map.searchTerm] ?? "").trim(),
+    searchTermRoot: searchTermToRoot(String(raw[map.searchTerm] ?? "").trim()),
+    impr, clicks, spend, sales, orders,
+    ctr: map.ctr ? safeNum(raw[map.ctr]) : (impr > 0 ? clicks / impr : 0),
+    cpc: map.cpc ? safeNum(raw[map.cpc]) : (clicks > 0 ? spend / clicks : 0),
+    cvr: map.cvr ? safeNum(raw[map.cvr]) : (clicks > 0 ? orders / clicks : 0),
+    acos: map.acos ? safeNum(raw[map.acos]) : (sales > 0 ? spend / sales : 0),
+    roas: map.roas ? safeNum(raw[map.roas]) : (spend > 0 ? sales / spend : 0),
+  };
+};
+
+/** =========================
+ * ASIN detector
+ * ========================= */
+const isASINLike = (s) => {
+  const x = String(s || "").trim();
+  if (!x) return false;
+  const candidates = x.match(/[A-Z0-9]{10}/ig);
+  if (!candidates) return false;
+  const hasDigit = (v) => /\d/.test(v);
+  for (const c of candidates) if ((/^B[A-Z0-9]{9}$/i.test(c) || /^[A-Z0-9]{10}$/i.test(c)) && hasDigit(c)) return true;
+  return /asin\s*=\s*[A-Z0-9]{10}/i.test(x) || /asin\s*:\s*[A-Z0-9]{10}/i.test(x);
+};
+const detectRowType = (name, rankBy) => (rankBy === "searchTerm" || rankBy === "searchTermRoot" || rankBy === "targeting") ? (isASINLike(name) ? "asin" : "keyword") : "other";
+
+/** =========================
+ * State
+ * ========================= */
+let ALL = [], VIEW = [], importedFiles = [], trendChart = null;
+let rankSort = { key: "spend", dir: "desc" };
+let RANK_ROWS = [], rankTypeFilter = "all";
+let actionTypeFilter = "all", BID_ROWS = [], NEG_ROWS = [];
+let LONG_TAIL_ROWS = [];
+
+/** =========================
+ * Importers
+ * ========================= */
+const parseCSV = (file) => new Promise((r,j)=>Papa.parse(file, {header:true, skipEmptyLines:true, complete:res=>r(res.data), error:j}));
+const parseXLSX = (file) => new Promise((r,j)=>{
+  const reader = new FileReader();
+  reader.onload = (e)=>{try{const wb=XLSX.read(new Uint8Array(e.target.result),{type:"array"});r(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:""}));}catch(err){j(err);}};
+  reader.onerror = j; reader.readAsArrayBuffer(file);
+});
+const dedupeRows = (rows) => {
+  const seen = new Set(), out = [];
+  for (const r of rows) {
+    const key = [r.date, r.portfolio, r.campaign, r.adGroup, r.targeting, r.matchType, r.searchTerm, r.spend.toFixed(4), r.sales.toFixed(4), String(r.orders)].join("|");
+    if (!seen.has(key)) { seen.add(key); out.push(r); }
+  } return out;
+};
+
+const importMultipleFiles = async (files) => {
+  clearLog();
+  if (!libsCheck()) return;
+
+  const mergeMode = $("mergeMode").value, dedupeMode = $("dedupeMode").value;
+  const maxRows = clamp(safeNum($("maxRows").value) || 250000, 10000, 2000000);
+
+  log(`开始导入：${files.length} 个文件（merge=${mergeMode}, dedupe=${dedupeMode}, maxRows=${maxRows}）`);
+  setSubtitle("正在导入文件…（请看左侧导入日志）");
+
+  if (mergeMode === "replace") { ALL = []; importedFiles = []; log("Replace 模式：已清空历史数据", "warn"); }
+
+  for (const file of files) {
+    const name = file.name, lower = name.toLowerCase(); log(`读取文件：${name}`);
+    try {
+      let rows = [];
+      if (lower.endsWith(".csv")) { log(`解析 CSV：${name}`); rows = await parseCSV(file); }
+      else if (lower.endsWith(".xlsx") || lower.endsWith(".xls")) { log(`解析 XLSX/XLS：${name}`); rows = await parseXLSX(file); }
+      else { log(`跳过：不支持的文件类型（${name}）`, "warn"); continue; }
+
+      rows = rows.filter(r => r && Object.keys(r).length > 0);
+      if (!rows.length) { log(`警告：${name} 解析后为空`, "warn"); continue; }
+      if (rows.length > maxRows) { log(`警告：${name} 行数 ${rows.length.toLocaleString()} 超过 maxRows，将截断到 ${maxRows.toLocaleString()}`, "warn"); rows = rows.slice(0, maxRows); }
+
+      log(`识别字段映射：${name}`); const map = buildMap(rows);
+      log(`标准化字段 + 生成 Root：${name}`); const normalized = rows.map(r => normalizeRow(r, map, name)).filter(r => r.date);
+      log(`追加：${name} → ${normalized.length.toLocaleString()} 行`, "good");
+      ALL = ALL.concat(normalized); importedFiles.push({ name, rows: normalized.length });
+      await new Promise(r => setTimeout(r, 0));
+    } catch (err) { log(`错误：${name} 导入失败：${err?.message || err}`, "bad"); }
+  }
+
+  if (!ALL.length) {
+    log("导入结束：ALL 为空。请重点检查：1) 依赖库是否加载 2) 是否存在 Date/日期列 3) 日期是否能解析", "bad");
+    setSubtitle("导入结束：数据为空（请看左侧导入日志）");
+  } else {
+    if (dedupeMode === "on") { const before = ALL.length; ALL = dedupeRows(ALL); log(`去重完成：${before.toLocaleString()} → ${ALL.length.toLocaleString()}`, "good"); }
+    const dates = ALL.map(r => r.date).filter(Boolean).sort();
+    $("dateStart").value = dates[0]; $("dateEnd").value = dates[dates.length - 1];
+    log(`导入完成：文件 ${importedFiles.length} 个；ALL=${ALL.length.toLocaleString()} 行`, "good");
+    setSubtitle(`导入完成：文件 ${importedFiles.length} 个；ALL=${ALL.length.toLocaleString()} 行；日期范围 ${$("dateStart").value} → ${$("dateEnd").value}`);
+  }
+  renderFileList(); populateDropdowns(); applyFilters(true);
+};
+
+const renderFileList = () => {
+  const box = $("fileList");
+  box.innerHTML = importedFiles.length ? importedFiles.map(f=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 8px;border-radius:10px;">
+      <div style="font-size:12px;color:var(--text);word-break:break-all;">${escapeHtml(f.name)}</div>
+      <div style="font-size:11.5px;color:var(--muted);white-space:nowrap;">${fmtInt(f.rows)} rows</div>
+    </div>
+  `).join("") : `<div class="small">暂无</div>`;
+};
+
+/** =========================
+ * Dropdowns
+ * ========================= */
+const uniqSorted = (arr) => Array.from(new Set(arr.filter(Boolean))).sort((a,b)=>a.localeCompare(b));
+const setSingleSelectOptions = (select, values, allLabel="All") => {
+  const cur = select.value; select.innerHTML = `<option value="">${allLabel}</option>` + values.map(v => `<option value="${v}">${v}</option>`).join("");
+  if ([...select.options].some(o=>o.value===cur)) select.value = cur;
+};
+const populateDropdowns = () => {
+  const dropdowns = [
+    { id: "filterSource", mapFn: r => r.sourceFile, allLabel: "All Files" },
+    { id: "filterPortfolio", mapFn: r => r.portfolio },
+    { id: "filterCampaign", mapFn: r => r.campaign },
+    { id: "filterAdGroup", mapFn: r => r.adGroup },
+    { id: "filterTargeting", mapFn: r => r.targeting },
+    { id: "filterMatchType", mapFn: r => r.matchType },
+  ];
+  dropdowns.forEach(({ id, mapFn, allLabel }) => setSingleSelectOptions($(id), uniqSorted(ALL.map(mapFn)), allLabel));
+  wireCascade();
+};
+
+const wireCascade = () => {
+  const updateChildDropdowns = (currentFilterId, childFilterIds, mapFns) => {
+    const filters = ["filterSource", "filterPortfolio", "filterCampaign"].reduce((acc, id) => ({ ...acc, [id]: $(id).value }), {});
+    let rows = ALL;
+    for (const key in filters) if (filters[key]) rows = rows.filter(r => r[key.replace("filter", "").toLowerCase()] === filters[key]);
+    childFilterIds.forEach((childId, i) => setSingleSelectOptions($(childId), uniqSorted(rows.map(mapFns[i]))));
+    autoApply();
+  };
+  $("filterSource").onchange = () => {
+    ["filterPortfolio", "filterCampaign", "filterAdGroup", "filterTargeting", "filterMatchType"].forEach(id => ($(id).value = ""));
+    populateDropdowns(); autoApply();
+  };
+  $("filterPortfolio").onchange = () => updateChildDropdowns("filterPortfolio", ["filterCampaign", "filterAdGroup"], [r => r.campaign, r => r.adGroup]);
+  $("filterCampaign").onchange = () => updateChildDropdowns("filterCampaign", ["filterAdGroup"], [r => r.adGroup]);
+};
+
+/** =========================
+ * Aggregations
+ * ========================= */
+const withinDate = (r, start, end) => (!start || r.date >= start) && (!end || r.date <= end);
+const includesSearch = (r, q) => (!q || (r.searchTerm || "").toLowerCase().includes(q.toLowerCase()));
+const sumMetrics = (rows) => {
+  const sums = { impr:0, clicks:0, spend:0, sales:0, orders:0 };
+  for (const r of rows) for (const k in sums) sums[k] += r[k];
+  return {
+    ...sums,
+    ctr: sums.impr > 0 ? sums.clicks / sums.impr : 0,
+    cpc: sums.clicks > 0 ? sums.spend / sums.clicks : 0,
+    cvr: sums.clicks > 0 ? sums.orders / sums.clicks : 0,
+    acos: sums.sales > 0 ? sums.spend / sums.sales : 0,
+    roas: sums.spend > 0 ? sums.sales / sums.spend : 0,
+  };
+};
+const groupBy = (rows, keyFn) => {
+  const mp = new Map();
+  for (const r of rows) { const k = keyFn(r) || "(blank)"; (mp.has(k) ? mp : mp.set(k, [])).get(k).push(r); }
+  return mp;
+};
+
+/** =========================
+ * Word Frequency Builder
+ * ========================= */
+const buildWordStats = () => {
+  const minFreq = Math.max(1, Math.floor(safeNum($("wfMinFreq")?.value ?? 3)));
+  const minSpend = Math.max(0, safeNum($("wfMinSpend")?.value ?? 10));
+  const mp = new Map();
+
+  for (const r of VIEW) {
+    const term = r.searchTerm || "";
+    let words = [];
+    if (WF_MODE === "token") words = tokenize(term);
+    else if (WF_MODE === "bigram") words = ngrams(tokenize(term), 2);
+    else if (WF_MODE === "trigram") words = ngrams(tokenize(term), 3);
+    else if (WF_MODE === "mag") words = extractMagnification(term);
+
+    const uniqueWords = new Set(words); 
+    for (const w of uniqueWords) {
+      if (!w) continue;
+      if (!mp.has(w)) mp.set(w, []);
+      mp.get(w).push(r);
+    }
+  }
+
+  let out = [];
+  for (const [word, rows] of mp.entries()) {
+    const m = sumMetrics(rows);
+    if (rows.length < minFreq) continue;
+    if (m.spend < minSpend) continue;
+    const action =
+      (m.spend >= 30 && m.orders === 0) ? "NEGATE" :
+      (m.orders >= 2 || m.roas >= 3) ? "KEEP" : "WATCH";
+    out.push({ word, freq: rows.length, ...m, action });
+  }
+
+  const {key, dir} = wfSort;
+  const mul = dir==="asc" ? 1 : -1;
+  out.sort((a,b)=>{
+    const av = (key==="word"||key==="action") ? String(a[key]||"") : (a[key] ?? 0);
+    const bv = (key==="word"||key==="action") ? String(b[key]||"") : (b[key] ?? 0);
+    return (typeof av === "string" ? av.localeCompare(bv) : (av > bv ? 1 : -1)) * mul;
+  });
+  return out.slice(0, 100);
+};
+
+const renderWordFreq = () => {
+  const tbody = $("wfTable")?.querySelector("tbody");
+  if (!tbody) return;
+  if (!VIEW.length) { tbody.innerHTML = ""; return; }
+  const rows = buildWordStats();
+  tbody.innerHTML = rows.map(r => `
+    <tr data-word="${escapeHtml(r.word)}" style="cursor:pointer;">
+      <td title="${escapeHtml(r.word)}">${escapeHtml(r.word).slice(0, 180)}</td>
+      <td>${fmtInt(r.freq)}</td>
+      <td>${fmtMoney(r.spend)}</td>
+      <td>${fmtInt(r.orders)}</td>
+      <td>${(r.roas ?? 0).toFixed(2)}</td>
+      <td style="${r.acos > 0.4 ? 'color:#b42318;' : ''}">${fmtPct(r.acos)}</td>
+      <td>${actionTag(r.action)}</td>
+    </tr>
+  `).join("");
+};
+
+/** =========================
+ * Long Tail Keyword Mining (List)
+ * ========================= */
+const renderLongTailMining = () => {
+  const tbody = $("longTailTable")?.querySelector("tbody");
+  if (!tbody) return;
+  if (!VIEW.length) { tbody.innerHTML = ""; return; }
+
+  const minWords = Math.max(1, Math.floor(safeNum($("ltMinWords").value)));
+  const minOrders = Math.max(0, Math.floor(safeNum($("ltMinOrders").value)));
+  const minRoas = safeNum($("ltMinRoas").value);
+
+  const groups = groupBy(VIEW, r => r.searchTerm);
+  const candidates = [];
+
+  for (const [term, rows] of groups.entries()) {
+    if (isASINLike(term)) continue;
+    const wordCount = (term || "").trim().split(/\s+/).filter(Boolean).length;
+    if (wordCount < minWords) continue;
+
+    const m = sumMetrics(rows);
+    if (m.orders < minOrders) continue;
+    if (m.roas < minRoas) continue;
+
+    candidates.push({ term, wordCount, ...m });
+  }
+
+  candidates.sort((a,b) => b.sales - a.sales);
+  LONG_TAIL_ROWS = candidates; 
+
+  tbody.innerHTML = candidates.slice(0, 50).map(c => `
+    <tr>
+      <td title="${escapeHtml(c.term)}">${escapeHtml(c.term).slice(0, 80)}</td>
+      <td>${c.wordCount}</td>
+      <td>${fmtMoney(c.spend)}</td>
+      <td>${fmtMoney(c.sales)}</td>
+      <td>${fmtInt(c.orders)}</td>
+      <td>${c.roas.toFixed(2)}</td>
+      <td style="${c.acos > 0.4 ? 'color:#b42318;' : ''}">${fmtPct(c.acos)}</td>
+    </tr>
+  `).join("");
+
+  if (candidates.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px;">没有符合条件的长尾词（尝试降低“单词数”或“订单”门槛）</td></tr>`;
+  }
+};
+
+const exportLongTailCSV = () => {
+    if (!LONG_TAIL_ROWS.length) { alert("当前列表为空，无数据可导出。"); return; }
+    const rows = [["Search Term", "Word Count", "Spend", "Sales", "Orders", "ROAS", "ACOS"]];
+    for (const c of LONG_TAIL_ROWS) {
+        rows.push([
+            c.term, c.wordCount, c.spend.toFixed(2), c.sales.toFixed(2), c.orders, c.roas.toFixed(2), (c.acos*100).toFixed(2)+"%"
+        ]);
+    }
+    const filename = `long_tail_mining_${$("dateStart").value}.csv`;
+    downloadText(filename, toCSV(rows));
+};
+
+/** =========================
+ * Weekday Analysis
+ * ========================= */
+const renderWeekdayAnalysis = () => {
+  const tbody = $("weekdayTable")?.querySelector("tbody");
+  if (!tbody) return;
+  if (!VIEW.length) { tbody.innerHTML = ""; return; }
+
+  const days = ["周日 (Sun)", "周一 (Mon)", "周二 (Tue)", "周三 (Wed)", "周四 (Thu)", "周五 (Fri)", "周六 (Sat)"];
+  const bins = days.map(()=>[]);
+  
+  for (const r of VIEW) {
+    const d = new Date(r.date); 
+    if(!isNaN(d)) {
+       const parts = r.date.split("-");
+       const localDate = new Date(parts[0], parts[1]-1, parts[2]);
+       bins[localDate.getDay()].push(r);
+    }
+  }
+
+  const result = bins.map((rows, i) => ({ day: days[i], ...sumMetrics(rows) }));
+  const totalSales = sumMetrics(VIEW).sales || 1;
+
+  tbody.innerHTML = result.map(row => {
+    const salesPct = (row.sales / totalSales);
+    const barHtml = `
+      <div class="bar-row">
+        <div style="width:40px;text-align:right;color:var(--muted);margin-right:6px;">${(salesPct*100).toFixed(1)}%</div>
+        <div class="bar-track">
+           <div style="width:${salesPct*100}%;background:var(--accent)"></div>
+        </div>
+      </div>
+    `;
+    return `
+      <tr>
+        <td>${row.day}</td>
+        <td>${barHtml}</td>
+        <td>${fmtMoney(row.spend)}</td>
+        <td>${fmtMoney(row.sales)}</td>
+        <td>${fmtInt(row.orders)}</td>
+        <td>${row.roas.toFixed(2)}</td>
+        <td style="${row.acos > 0.4 ? 'color:#b42318;' : ''}">${fmtPct(row.acos)}</td>
+        <td>${fmtMoney(row.cpc)}</td>
+      </tr>
+    `;
+  }).join("");
+};
+
+/** =========================
+ * CPC Distribution Analysis (Granular 1.0-2.0)
+ * ========================= */
+const renderCPCDistribution = () => {
+  const tbody = $("cpcDistTable")?.querySelector("tbody");
+  if (!tbody) return;
+  if (!VIEW.length) { tbody.innerHTML = ""; return; }
+
+  // Define Buckets
+  const buckets = [
+      { label: "< 0.50", min:0, max:0.5, rows: [] },
+      { label: "0.50 - 1.00", min:0.5, max:1.0, rows: [] }
+  ];
+
+  // Granular 1.00 - 2.00 in 0.1 steps
+  for (let i = 10; i < 20; i++) {
+      const start = i / 10;
+      const end = (i + 1) / 10;
+      buckets.push({
+          label: `${start.toFixed(2)} - ${end.toFixed(2)}`,
+          min: start,
+          max: end,
+          rows: []
+      });
+  }
+
+  // Higher Buckets
+  buckets.push(
+      { label: "2.00 - 3.00", min:2.0, max:3.0, rows: [] },
+      { label: "3.00 - 5.00", min:3.0, max:5.0, rows: [] },
+      { label: "> 5.00", min:5.0, max:9999, rows: [] }
+  );
+
+  for (const r of VIEW) {
+      if (r.clicks <= 0) continue; 
+      const rowCpc = r.spend / r.clicks;
+      for(const b of buckets) {
+          if (rowCpc >= b.min && rowCpc < b.max) {
+              b.rows.push(r);
+              break;
+          }
+      }
+  }
+
+  const result = buckets.map(b => ({ ...b, metrics: sumMetrics(b.rows) }));
+  const totalSales = sumMetrics(VIEW).sales || 1;
+
+  tbody.innerHTML = result.map(b => {
+    const m = b.metrics;
+    if (m.impr === 0 && m.spend === 0) return ""; 
+    
+    const salesPct = (m.sales / totalSales);
+    const barHtml = `
+      <div class="bar-row">
+        <div style="width:40px;text-align:right;color:var(--muted);margin-right:6px;">${(salesPct*100).toFixed(1)}%</div>
+        <div class="bar-track">
+           <div style="width:${salesPct*100}%;background:var(--accent)"></div>
+        </div>
+      </div>
+    `;
+
+    return `
+      <tr>
+        <td>${b.label}</td>
+        <td>${barHtml}</td>
+        <td>${fmtMoney(m.spend)}</td>
+        <td>${fmtMoney(m.sales)}</td>
+        <td>${fmtInt(m.orders)}</td>
+        <td style="${m.roas >= 3 ? 'color:#1a7f37;font-weight:700' : ''}">${m.roas.toFixed(2)}</td>
+        <td style="${m.acos > 0.4 ? 'color:#b42318;' : ''}">${fmtPct(m.acos)}</td>
+        <td>${fmtPct(m.cvr)}</td>
+      </tr>
+    `;
+  }).join("");
+};
+
+/** =========================
+ * CVR Efficiency Analysis
+ * ========================= */
+const renderCVRDistribution = () => {
+  const tbody = $("cvrDistTable")?.querySelector("tbody");
+  if (!tbody) return;
+  if (!VIEW.length) { tbody.innerHTML = ""; return; }
+
+  const buckets = [
+      { label: "0% (无转化)", type: "zero", rows: [] },
+      { label: "0% - 5%", min:0, max:0.05, rows: [] },
+      { label: "5% - 10%", min:0.05, max:0.10, rows: [] },
+      { label: "10% - 20%", min:0.10, max:0.20, rows: [] },
+      { label: "> 20%", min:0.20, max:999, rows: [] }
+  ];
+
+  for (const r of VIEW) {
+      if (r.clicks <= 0) continue; 
+      const rowCvr = r.orders / r.clicks;
+      
+      if (r.orders === 0) {
+          buckets[0].rows.push(r);
+      } else {
+          for(let i=1; i<buckets.length; i++) {
+              const b = buckets[i];
+              if (rowCvr > b.min && rowCvr <= b.max) {
+                  b.rows.push(r);
+                  break;
+              }
+          }
+      }
+  }
+
+  const result = buckets.map(b => ({ ...b, metrics: sumMetrics(b.rows) }));
+  const totalSpend = sumMetrics(VIEW).spend || 1;
+
+  tbody.innerHTML = result.map(b => {
+    const m = b.metrics;
+    if (m.impr === 0 && m.spend === 0) return ""; 
+    
+    const spendPct = (m.spend / totalSpend);
+    const barHtml = `
+      <div class="bar-row">
+        <div style="width:40px;text-align:right;color:var(--muted);margin-right:6px;">${(spendPct*100).toFixed(1)}%</div>
+        <div class="bar-track">
+           <div style="width:${spendPct*100}%;background:${b.type==='zero'?'#b42318':'var(--accent)'}"></div>
+        </div>
+      </div>
+    `;
+
+    return `
+      <tr>
+        <td>${b.label}</td>
+        <td>${barHtml}</td>
+        <td>${fmtMoney(m.spend)}</td>
+        <td>${fmtMoney(m.sales)}</td>
+        <td>${fmtInt(m.orders)}</td>
+        <td style="${m.roas >= 3 ? 'color:#1a7f37;font-weight:700' : ''}">${m.roas.toFixed(2)}</td>
+        <td style="${m.acos > 0.4 ? 'color:#b42318;' : ''}">${fmtPct(m.acos)}</td>
+        <td>${fmtMoney(m.cpc)}</td>
+      </tr>
+    `;
+  }).join("");
+};
+
+/** =========================
+ * Auto / Manual Comparison
+ * ========================= */
+const renderAutoManual = () => {
+  if (!VIEW.length) return;
+  const tbody = $("autoManualTable")?.querySelector("tbody");
+  if (!tbody) return;
+  const isManual = (t) => ["broad","phrase","exact"].includes((t||"").toLowerCase());
+  const autoRows = [], manualRows = [];
+  for (const r of VIEW) {
+    if (isManual(r.matchType)) manualRows.push(r);
+    else autoRows.push(r);
+  }
+  const sA = sumMetrics(autoRows), sM = sumMetrics(manualRows);
+  const row = (label, vA, vM, fmt, highlightAcos=false) => {
+    let pctA = 0, pctM = 0;
+    const total = (vA||0) + (vM||0);
+    if (total > 0 && !label.includes("率") && !label.includes("ACOS") && !label.includes("ROAS") && !label.includes("CPC")) {
+       pctA = (vA/total); pctM = (vM/total);
+    }
+    const colorA = highlightAcos && vA > 0.4 ? 'color:#b42318' : '';
+    const colorM = highlightAcos && vM > 0.4 ? 'color:#b42318' : '';
+    let barHtml = `<div style="color:var(--muted);font-size:11px;">—</div>`;
+    if (total > 0 && pctA+pctM > 0) {
+      barHtml = `
+        <div class="bar-row">
+          <div style="flex:1;text-align:right;color:var(--muted)">${(pctA*100).toFixed(0)}%</div>
+          <div class="bar-track">
+             <div style="width:${pctA*100}%;background:var(--accent)"></div>
+          </div>
+          <div style="flex:1;text-align:left;color:var(--muted)">${(pctM*100).toFixed(0)}%</div>
+        </div>
+      `;
+    }
+    return `<tr>
+      <td>${label}</td>
+      <td style="${colorA}">${fmt(vA)}</td>
+      <td style="${colorM}">${fmt(vM)}</td>
+      <td>${barHtml}</td>
+    </tr>`;
+  };
+  tbody.innerHTML = 
+    row("花费", sA.spend, sM.spend, fmtMoney) +
+    row("销售额", sA.sales, sM.sales, fmtMoney) +
+    row("订单数", sA.orders, sM.orders, fmtInt) +
+    row("ACOS", sA.acos, sM.acos, fmtPct, true) +
+    row("ROAS", sA.roas, sM.roas, (v)=>v.toFixed(2)) +
+    row("转化率 (CVR)", sA.cvr, sM.cvr, fmtPct) +
+    row("点击成本 (CPC)", sA.cpc, sM.cpc, fmtMoney);
+};
+
+/** =========================
+ * Actions (自动判定)
+ * ========================= */
+const getRules = () => ({
+  spendNeg: safeNum($("ruleSpendNeg").value), clicksNeg: Math.max(0, Math.floor(safeNum($("ruleClicksNeg").value))),
+  roasNeg: safeNum($("ruleRoasNeg").value), roasKeep: safeNum($("ruleRoasKeep").value),
+  ordersKeep: Math.max(0, Math.floor(safeNum($("ruleOrdersKeep").value))), roasMigrateMin: safeNum($("ruleRoasMigrateMin").value)
+});
+
+const decideAction = (item, rankBy) => {
+  const r = getRules(); const reasons = [];
+  const condNeg1 = item.spend >= r.spendNeg && item.orders <= 0; if (condNeg1) reasons.push(`花费≥${r.spendNeg} & 订单数=0`);
+  const condNeg2 = item.clicks >= r.clicksNeg && item.roas > 0 && item.roas < r.roasNeg; if (condNeg2) reasons.push(`点击量≥${r.clicksNeg} & ROAS<${r.roasNeg}`);
+  const condNeg3 = item.clicks >= r.clicksNeg && item.sales <= 0 && item.spend >= r.spendNeg; if (condNeg3) reasons.push(`销售额=0 & 花费≥${r.spendNeg}`);
+
+  if (condNeg1 || condNeg2 || condNeg3) return { action:"NEGATE", reason: reasons.join(" • "), suggestNeg: suggestNegative(item.name, rankBy) };
+  
+  reasons.length = 0;
+  const condKeep1 = item.roas >= r.roasKeep && item.spend > 0; if (condKeep1) reasons.push(`ROAS≥${r.roasKeep}`);
+  const condKeep2 = item.orders >= r.ordersKeep; if (condKeep2) reasons.push(`订单数≥${r.ordersKeep}`);
+  if (condKeep1 || condKeep2) return { action:"KEEP", reason: reasons.join(" • "), suggestNeg:"" };
+
+  if (item.orders > 0 && item.roas >= r.roasMigrateMin && item.roas < r.roasKeep)
+    return { action:"MIGRATE", reason: `订单数>0 & ROAS≥${r.roasMigrateMin} & <${r.roasKeep}`, suggestNeg:"" };
+
+  return { action:"KEEP", reason:"无风险信号", suggestNeg:"" };
+};
+
+const suggestNegative = (name, rankBy) => {
+  const negType = $("exportNegMatch")?.value || "phrase";
+  const keyword = (rankBy === "searchTermRoot" ? rootToPhrase(name) : String(name || "").trim());
+  return keyword && keyword !== "(blank)" ? `${negType.toUpperCase()}: ${keyword}` : "";
+};
+const actionTag = (action) => `<span class="tag ${action==="NEGATE"?"bad":action==="MIGRATE"?"warn":"good"}">${action}</span>`;
+
+/** =========================
+ * BID UP
+ * ========================= */
+const decideBidUp = (item) => {
+  const spendBid = safeNum($("bidSpend")?.value ?? 20);
+  const ordersBid = Math.max(0, Math.floor(safeNum($("bidOrders")?.value ?? 2)));
+  const roasBid = safeNum($("bidRoas")?.value ?? 3.5);
+  if (!(item.spend >= spendBid && item.orders >= ordersBid && item.roas >= roasBid)) return { bid:false, suggest:"" };
+
+  let pct = 20;
+  const intensity = $("bidIntensity")?.value;
+  if (intensity !== "auto") pct = Number(intensity) || 20;
+  else if (item.roas >= 6) pct = 30; else if (item.roas >= 4.5) pct = 20; else pct = 10;
+  return { bid:true, suggest:`提高竞价 +${pct}%` };
+};
+
+/** =========================
+ * Export negatives
+ * ========================= */
+const exportNegativesCSV = () => {
+  const rankBy = $("rankBy").value;
+  if (!["searchTerm", "searchTermRoot"].includes(rankBy)) { log("导出失败：只有在榜单维度为 Search Term / Root 时才允许导出否定词", "bad"); alert("导出失败：请将“榜单聚合维度”切换为 Search Term 或 Search Term Root，再导出否定词。"); return; }
+  if (!VIEW.length) { log("导出失败：当前视图为空", "bad"); alert("导出失败：当前视图为空。"); return; }
+
+  const itemsToExport = $("exportScope").value === "rank" ? RANK_ROWS.slice() : (() => {
+    const groups = groupBy(VIEW, getRankKey());
+    return [...groups.entries()].map(([name, list]) => {
+      const it = { name, ...sumMetrics(list) };
+      const a = decideAction(it, rankBy);
+      return { ...it, action:a.action, reason:a.reason, suggestNeg:a.suggestNeg };
+    }).sort((a,b)=> (b.spend||0) - (a.spend||0));
+  })();
+
+  const rows = [["关键词","否定匹配","分组维度","理由","花费","销售额","订单数","ROAS","ACOS"]];
+  const seen = new Set(), negMatch = $("exportNegMatch").value.toUpperCase();
+
+  for (const it of itemsToExport) {
+    if (it.action !== "NEGATE") continue;
+    const keyword = (rankBy === "searchTermRoot" ? rootToPhrase(it.name) : String(it.name || "").trim()).replace(/\s+/g," ").trim();
+    if (!keyword || keyword === "(blank)") continue;
+    const key = `${negMatch}:${keyword.toLowerCase()}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      rows.push([
+        keyword, negMatch, (rankBy === "searchTerm" ? "客户搜索词" : "搜索词根"), it.reason || "",
+        (it.spend ?? 0).toFixed(2), (it.sales ?? 0).toFixed(2), String(it.orders ?? 0),
+        (it.roas ?? 0).toFixed(2), ((it.acos ?? 0) * 100).toFixed(2) + "%"
+      ]);
+    }
+  }
+  if (rows.length === 1) { log("未找到可导出的 NEGATE 项（请调低阈值或扩大日期范围）", "warn"); alert("未找到可导出的 NEGATE 项（请调低阈值或扩大日期范围）。"); return; }
+  const filename = `negatives_${rankBy}_${negMatch}_${$("dateStart").value || "start"}_${$("dateEnd").value || "end"}.csv`;
+  downloadText(filename, toCSV(rows));
+  log(`已导出否定词 CSV：${filename}（${rows.length-1} 条）`, "good");
+};
+
+/** =========================
+ * Export BID UP
+ * ========================= */
+const exportBidUpCSV = () => {
+  if (!VIEW.length) { log("导出失败：当前视图为空", "bad"); alert("导出失败：当前视图为空。"); return; }
+  buildActionLists();
+  if (!BID_ROWS.length) { log("未找到可导出的 BID UP 项（请调低阈值或扩大日期范围）", "warn"); alert("未找到可导出的 BID UP 项（请调低阈值或扩大日期范围）。"); return; }
+
+  const rows = [["类型","名称","建议","花费","销售额","订单数","ROAS","ACOS"]];
+  for (const it of BID_ROWS) {
+    rows.push([
+      (it.type || "").toUpperCase(), String(it.name || ""), String(it.suggest || ""),
+      (it.spend ?? 0).toFixed(2), (it.sales ?? 0).toFixed(2), String(it.orders ?? 0),
+      (it.roas ?? 0).toFixed(2), ((it.acos ?? 0) * 100).toFixed(2) + "%"
+    ]);
+  }
+  const filename = `bidup_${$("dateStart").value || "start"}_${$("dateEnd").value || "end"}.csv`;
+  downloadText(filename, toCSV(rows));
+  log(`已导出加价词 CSV：${filename}（${rows.length-1} 条）`, "good");
+};
+
+/** =========================
+ * Rendering
+ * ========================= */
+const renderKPIs = (total) => {
+  const kpis = [
+    { label:"花费", value: fmtMoney(total.spend), meta: `点击成本 ${fmtMoney(total.cpc)} • 点击率 ${fmtPct(total.ctr)}` },
+    { label:"销售额 (7天)", value: fmtMoney(total.sales), meta: `ROAS ${total.roas.toFixed(2)} • ACOS ${fmtPct(total.acos)}` },
+    { label:"订单数 (7天)", value: fmtInt(total.orders), meta: `转化率 ${fmtPct(total.cvr)} • 点击量 ${fmtInt(total.clicks)}` },
+    { label:"展示量", value: fmtInt(total.impr), meta: `点击量 ${fmtInt(total.clicks)} • 点击率 ${fmtPct(total.ctr)}` },
+    { label:"ACOS", value: fmtPct(total.acos), meta: `花费/销售额` },
+    { label:"ROAS", value: total.roas.toFixed(2), meta: `销售额/花费` },
+    { label:"点击成本", value: fmtMoney(total.cpc), meta: `花费/点击量` },
+    { label:"转化率", value: fmtPct(total.cvr), meta: `订单数/点击量` },
+  ];
+  $("kpiGrid").innerHTML = kpis.map(k => `
+    <div class="card kpi">
+      <div class="label"><span>${k.label}</span><span class="pill">KPI</span></div>
+      <div class="value">${k.value}</div>
+      <div class="meta"><span>${k.meta}</span></div>
+    </div>
+  `).join("");
+};
+
+const renderTrend = (rows) => {
+  const byDate = groupBy(rows, r=>r.date);
+  const series = [...byDate.keys()].sort().map(d=>({ date:d, ...sumMetrics(byDate.get(d)) }));
+  const dataMap = (key, transform = v => v) => series.map(s => transform(s[key]));
+  const datasets = [
+    { label:"花费", data:dataMap("spend"), tension:.25, pointRadius:0, borderWidth:2 },
+    { label:"销售额", data:dataMap("sales"), tension:.25, pointRadius:0, borderWidth:2 },
+    { label:"订单数", data:dataMap("orders"), tension:.25, pointRadius:0, borderWidth:2 },
+    { label:"ACOS %", data:dataMap("acos", v => isFinite(v) ? v*100 : 0), tension:.25, pointRadius:0, borderWidth:2, yAxisID:"y1" },
+    { label:"ROAS", data:dataMap("roas", v => isFinite(v) ? v : 0), tension:.25, pointRadius:0, borderWidth:2, yAxisID:"y1" },
+  ];
+  if (trendChart) trendChart.destroy();
+  trendChart = new Chart($("trendChart"), {
+    type:"line", data:{ labels:series.map(s=>s.date), datasets },
+    options:{
+      responsive:true, maintainAspectRatio:false, interaction:{ mode:"index", intersect:false },
+      scales:{
+        y:{ beginAtZero:true, grid:{ color:"rgba(229,229,234,.6)" } },
+        y1:{ beginAtZero:true, position:"right", grid:{ drawOnChartArea:false } },
+        x:{ grid:{ display:false } }
+      }
+    }
+  });
+};
+
+const getRankKey = () => {
+  const mapping = {
+    searchTerm: r => r.searchTerm || "(空白)",
+    searchTermRoot: r => r.searchTermRoot || "(空白)",
+    targeting: r => r.targeting || "(空白)",
+    campaign: r => r.campaign || "(空白)",
+    adGroup: r => r.adGroup || "(空白)",
+  };
+  return mapping[$("rankBy").value];
+};
+
+const sortRank = (items) => {
+  const {key, dir} = rankSort;
+  const mul = dir==="asc" ? 1 : -1;
+  items.sort((a,b)=>{
+    const av = key==="name"||key==="action" ? String(a[key]||"") : (a[key] ?? 0);
+    const bv = key==="name"||key==="action" ? String(b[key]||"") : (b[key] ?? 0);
+    return (typeof av === "string" ? av.localeCompare(bv) : (av > bv ? 1 : -1)) * mul;
+  });
+};
+
+const buildRankTable = (rows) => {
+  const rankBy = $("rankBy").value, keyFn = getRankKey();
+  let items = [...groupBy(rows, keyFn).entries()].map(([name, list]) => {
+    const base = { name, ...sumMetrics(list) };
+    const {action, reason, suggestNeg} = decideAction(base, rankBy);
+    return { ...base, action, reason, suggestNeg };
+  });
+  if (rankTypeFilter !== "all") items = items.filter(it => detectRowType(it.name, rankBy) === rankTypeFilter);
+  sortRank(items);
+  RANK_ROWS = items.slice(0, clamp(safeNum($("rankTopN").value) || 30, 5, 500));
+};
+
+const renderRankTable = () => {
+  buildRankTable(VIEW);
+  $("rankTable").querySelector("tbody").innerHTML = RANK_ROWS.map(it => `
+    <tr>
+      <td title="${escapeHtml(it.name)}">${escapeHtml(it.name).slice(0, 160)}</td>
+      <td>${fmtMoney(it.spend)}</td>
+      <td>${fmtMoney(it.sales)}</td>
+      <td>${fmtInt(it.orders)}</td>
+      <td>${fmtInt(it.impr)}</td>
+      <td>${fmtInt(it.clicks)}</td>
+      <td>${fmtPct(it.ctr)}</td>
+      <td>${fmtMoney(it.cpc)}</td>
+      <td>${fmtPct(it.cvr)}</td>
+      <td style="${it.acos > 0.4 ? 'color:#b42318;' : ''}">${fmtPct(it.acos)}</td>
+      <td>${it.roas.toFixed(2)}</td>
+    </tr>
+  `).join("");
+};
+
+const buildActionLists = () => {
+  const rankBy = $("rankBy").value, keyFn = getRankKey();
+  const allItems = [...groupBy(VIEW, keyFn).entries()].map(([name, list]) => ({ name, ...sumMetrics(list) }));
+  let bidCandidates = [], negCandidates = [];
+  for (const base of allItems) {
+    const type = detectRowType(base.name, rankBy);
+    const {bid, suggest} = decideBidUp(base);
+    if (bid && (type === "keyword" || type === "asin")) bidCandidates.push({ ...base, type, suggest });
+    const {action} = decideAction(base, rankBy);
+    if (action === "NEGATE" && (type === "keyword" || type === "asin")) negCandidates.push({ ...base, type });
+  }
+  const filterAndSort = (items) => {
+    let filtered = actionTypeFilter === "all" ? items : items.filter(x => x.type === actionTypeFilter);
+    return filtered.sort((a,b)=> (b.spend||0) - (a.spend||0)).slice(0, clamp(safeNum($("rankTopN").value) || 30, 5, 500));
+  };
+  BID_ROWS = filterAndSort(bidCandidates);
+  NEG_ROWS = filterAndSort(negCandidates);
+};
+
+const renderActionLists = () => {
+  buildActionLists();
+  const renderTable = (tableId, rows, getRowHtml) => {
+    $(tableId).querySelector("tbody").innerHTML = rows.map(getRowHtml).join("");
+  };
+  renderTable("bidUpTable", BID_ROWS, it => `
+    <tr>
+      <td><span class="pill">${it.type.toUpperCase()}</span></td>
+      <td title="${escapeHtml(it.name)}">${escapeHtml(it.name).slice(0, 140)}</td>
+      <td>${fmtMoney(it.spend)}</td>
+      <td>${fmtInt(it.orders)}</td>
+      <td>${(it.roas ?? 0).toFixed(2)}</td>
+      </tr>
+  `);
+  renderTable("negListTable", NEG_ROWS, it => `
+    <tr>
+      <td><span class="pill">${it.type.toUpperCase()}</span></td>
+      <td title="${escapeHtml(it.name)}">${escapeHtml(it.name).slice(0, 140)}</td>
+      <td>${fmtMoney(it.spend)}</td>
+      <td>${fmtInt(it.orders)}</td>
+      <td>${(it.roas ?? 0).toFixed(2)}</td>
+    </tr>
+  `);
+};
+
+/** =========================
+ * Apply Filters
+ * ========================= */
+const applyFilters = (initial=false) => {
+  if (!ALL.length) {
+    setSubtitle("未导入数据。请导入同类报表（支持多文件）。");
+    $("kpiGrid").innerHTML = "";
+    if (trendChart) { trendChart.destroy(); trendChart = null; }
+    $("rankTable").querySelector("tbody").innerHTML = "";
+    renderActionLists();
+    renderWordFreq();
+    renderLongTailMining();
+    renderWeekdayAnalysis();
+    renderCPCDistribution();
+    renderCVRDistribution();
+    return;
+  }
+
+  const filters = {
+    dateStart: $("dateStart").value, dateEnd: $("dateEnd").value,
+    filterSource: $("filterSource").value, filterPortfolio: $("filterPortfolio").value,
+    filterCampaign: $("filterCampaign").value, filterAdGroup: $("filterAdGroup").value,
+    filterTargeting: $("filterTargeting").value, filterMatchType: $("filterMatchType").value,
+    filterSearchTerm: $("filterSearchTerm").value.trim()
+  };
+
+  VIEW = ALL.filter(r =>
+    withinDate(r, filters.dateStart, filters.dateEnd) &&
+    (!filters.filterSource || r.sourceFile === filters.filterSource) &&
+    (!filters.filterPortfolio || r.portfolio === filters.filterPortfolio) &&
+    (!filters.filterCampaign || r.campaign === filters.filterCampaign) &&
+    (!filters.filterAdGroup || r.adGroup === filters.filterAdGroup) &&
+    (!filters.filterTargeting || r.targeting === filters.filterTargeting) &&
+    (!filters.filterMatchType || r.matchType === filters.filterMatchType) &&
+    includesSearch(r, filters.filterSearchTerm)
+  );
+
+  const total = sumMetrics(VIEW);
+  setSubtitle(`已导入 ${importedFiles.length} 个文件；ALL=${ALL.length.toLocaleString()} 行；当前视图=${VIEW.length.toLocaleString()} 行；日期范围 ${filters.dateStart} → ${filters.dateEnd}`);
+
+  renderKPIs(total);
+  renderTrend(VIEW);
+  renderRankTable();
+  renderActionLists();
+  renderWordFreq();
+  renderLongTailMining(); 
+  renderWeekdayAnalysis(); 
+  renderCPCDistribution(); 
+  renderCVRDistribution(); 
+  renderAutoManual();
+
+  if (initial) {
+    document.querySelectorAll(".chipBtn").forEach(b => b.classList.remove("active"));
+    document.querySelector('.chipBtn[data-range="all"]')?.classList.add("active");
+  }
+};
+const autoApply = debounce(applyFilters, 200);
+
+/** =========================
+ * Quick Range
+ * ========================= */
+const applyQuickRange = (type) => {
+  if (!ALL.length) return;
+  const dates = ALL.map(r=>r.date).filter(Boolean).sort();
+  const [minD, maxD] = [dates[0], dates[dates.length-1]];
+  const max = new Date(maxD);
+  let start = new Date(max);
+  const rangeMap = {
+    yesterday: () => start.setDate(start.getDate()-1),
+    "7d": () => start.setDate(start.getDate()-6),
+    "30d": () => start.setDate(start.getDate()-29),
+    mtd: () => start.setDate(1),
+    all: () => { $("dateStart").value = minD; $("dateEnd").value = maxD; return; }
+  };
+  rangeMap[type]();
+  const isoStart = toISODate(start);
+  $("dateStart").value = isoStart < minD ? minD : isoStart;
+  $("dateEnd").value = maxD;
+};
+
+/** =========================
+ * Events
+ * ========================= */
+$("fileInput").addEventListener("change", async (e)=>{
+  const files = Array.from(e.target.files || []);
+  if (files.length) { log("文件选择事件触发（change）"); await importMultipleFiles(files); e.target.value = ""; }
+});
+
+const filterIds = [
+  "dateStart","dateEnd","filterSource","filterPortfolio","filterCampaign","filterAdGroup","filterTargeting","filterMatchType",
+  "rankBy","rankTopN","ruleSpendNeg","ruleClicksNeg","ruleRoasNeg","ruleRoasKeep","ruleOrdersKeep","ruleRoasMigrateMin",
+  "exportScope","exportNegMatch","bidSpend","bidOrders","bidRoas","bidIntensity",
+  "wfMinFreq","wfMinSpend",
+  "ltMinWords","ltMinOrders","ltMinRoas"
+];
+filterIds.forEach(id => $(id)?.addEventListener("change", autoApply));
+$("filterSearchTerm").addEventListener("input", debounce(applyFilters, 280));
+
+$("btnReset").addEventListener("click", () => {
+  ["filterSource","filterPortfolio","filterCampaign","filterAdGroup","filterTargeting","filterMatchType","filterSearchTerm"].forEach(id => ($(id).value = ""));
+  $("rankBy").value = "searchTerm"; rankSort = { key:"spend", dir:"desc" };
+  rankTypeFilter = "all"; document.querySelectorAll('.seg[aria-label="Type Filter"] .segBtn').forEach(b=>b.classList.toggle("active", b.dataset.type === "all"));
+  actionTypeFilter = "all"; document.querySelectorAll('.seg[aria-label="Action Type Filter"] .segBtn').forEach(b=>b.classList.toggle("active", b.dataset.act === "all"));
+  WF_MODE = "token";
+  document.querySelectorAll('.seg[aria-label="Word Frequency Mode"] .segBtn').forEach(b=>b.classList.toggle("active", b.dataset.wf === "token"));
+  $("wfMinFreq").value = 3; $("wfMinSpend").value = 10;
+  wfSort = { key: "spend", dir: "desc" };
+  // Reset Long Tail
+  $("ltMinWords").value = 3; $("ltMinOrders").value = 2; $("ltMinRoas").value = 2.0;
+
+  populateDropdowns(); applyFilters(); log("已重置筛选", "good");
+});
+
+$("btnClearAll").addEventListener("click", () => {
+  ALL = []; VIEW = []; importedFiles = [];
+  renderFileList(); populateDropdowns(); applyFilters(true); clearLog(); log("已清空全部数据", "warn");
+});
+
+document.querySelectorAll(".chipBtn").forEach(btn => btn.addEventListener("click", () => {
+  document.querySelectorAll(".chipBtn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active"); applyQuickRange(btn.dataset.range); applyFilters();
+}));
+
+$("rankTable").querySelectorAll("thead th").forEach(th => th.addEventListener("click", () => {
+  const key = th.dataset.sort;
+  if (!key) return;
+  rankSort = (rankSort.key === key) ? {key, dir: (rankSort.dir === "desc" ? "asc" : "desc")} : {key, dir:"desc"};
+  renderRankTable(); renderActionLists(); renderWordFreq();
+}));
+
+$("wfTable").querySelectorAll("thead th").forEach(th => th.addEventListener("click", () => {
+  const key = th.dataset.sort;
+  if(!key) return;
+  wfSort = (wfSort.key === key) ? {key, dir: (wfSort.dir === "desc" ? "asc" : "desc")} : {key, dir:"desc"};
+  renderWordFreq();
+}));
+
+const setTypeFilter = (t) => {
+  rankTypeFilter = t;
+  document.querySelectorAll('.seg[aria-label="Type Filter"] .segBtn').forEach(b => b.classList.toggle("active", b.dataset.type === t));
+  renderRankTable(); renderActionLists(); renderWordFreq();
+};
+const setActionTypeFilter = (t) => {
+  actionTypeFilter = t;
+  document.querySelectorAll('.seg[aria-label="Action Type Filter"] .segBtn').forEach(b => b.classList.toggle("active", b.dataset.act === t));
+  renderActionLists(); renderWordFreq();
+};
+
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".segBtn");
+  if (!btn) return;
+  if (btn.dataset.type) setTypeFilter(btn.dataset.type);
+  if (btn.dataset.act) setActionTypeFilter(btn.dataset.act);
+  if (btn.dataset.wf) {
+    WF_MODE = btn.dataset.wf;
+    document.querySelectorAll('.seg[aria-label="Word Frequency Mode"] .segBtn').forEach(b => b.classList.toggle("active", b.dataset.wf === WF_MODE));
+    renderWordFreq();
+  }
+});
+
+$("wfTable").addEventListener("click", (e)=>{
+  const tr = e.target.closest("tr");
+  if (!tr || !tr.dataset.word) return;
+  $("filterSearchTerm").value = tr.dataset.word;
+  applyFilters();
+});
+
+$("btnExportNeg").addEventListener("click", exportNegativesCSV);
+$("btnExportBidUp").addEventListener("click", exportBidUpCSV);
+$("btnExportLongTail").addEventListener("click", exportLongTailCSV);
+
+$("btnRuleReset").addEventListener("click", () => {
+  $("ruleSpendNeg").value = 30; $("ruleClicksNeg").value = 20; $("ruleRoasNeg").value = 1.5;
+  $("ruleRoasKeep").value = 3; $("ruleOrdersKeep").value = 2; $("ruleRoasMigrateMin").value = 2;
+  log("已重置规则为默认值", "good"); applyFilters();
+});
+
+$("btnCheck").addEventListener("click", () => { 
+  log("开始依赖自检…"); 
+  if(libsCheck()) alert("所有依赖库加载正常！");
+  else alert("依赖库缺失，请检查网络或控制台日志。");
+});
+
+/** =========================
+ * Demo
+ * ========================= */
+$("btnDemo").addEventListener("click", () => {
+  clearLog(); libsCheck();
+  const mkDemoData = (file, offset) => {
+    const base = new Date(), terms = [
+      "blue light reading glasses 2.0", "2.0 magnification readers for women", "cat eye readers 1.5",
+      "spring hinge reading glasses 2.5", "progressive readers", "anti glare computer glasses 2.0",
+      "reading glasses men 2.5", "women cat-eye blue light readers 2.0", "cheap readers 3.0", "b07ybhgt31"
+    ];
+    const asins = ["B07YBHGT31","B0ABCDE1234","B0ZZZZZ9999","B0QWERTY123"];
+    return Array.from({length:20}).map((_,i) => {
+      const d = new Date(base); 
+      d.setDate(d.getDate() - (13-i) - offset);
+      
+      const hour = Math.floor(Math.random() * 24); // Demo Hour
+      const spend = Math.random()*80 + 10, clicks = Math.round(Math.random()*120);
+      const impr = clicks* (Math.round(Math.random()*30)+10);
+      const orders = Math.random()<0.35 ? 0 : Math.round(Math.random()*4);
+      const sales = orders * (Math.random()*40 + 18);
+      const st = terms[Math.floor(Math.random()*terms.length)];
+      const targeting = Math.random()<0.5 ? "keyword" : `asin=${asins[Math.floor(Math.random()*asins.length)]}`;
+      
+      return {
+        sourceFile:file, date:toISODate(d), hour, // Demo Hour
+        portfolio:"Portfolio A",
+        campaign:(Math.random()<0.5?"Campaign Manual":"Campaign Auto"),
+        adGroup:(Math.random()<0.5?"AdGroup Core":"AdGroup Test"),
+        targeting, matchType:(Math.random()<0.4?"broad":(Math.random()<0.6?"phrase":"exact")),
+        searchTerm:st, searchTermRoot:searchTermToRoot(st),
+        impr, clicks, spend, sales, orders,
+        ctr:impr>0?clicks/impr:0, cpc:clicks>0?spend/clicks:0, cvr:clicks>0?orders/clicks:0,
+        acos:sales>0?spend/sales:0, roas:spend>0?sales/spend:0,
+      };
+    });
+  };
+
+  if ($("mergeMode").value === "replace") { ALL = []; importedFiles = []; }
+  const a = mkDemoData("demo_A.xlsx", 0), b = mkDemoData("demo_B.xlsx", 10);
+  ALL = ALL.concat(a,b);
+  importedFiles.push({name:"demo_A.xlsx", rows:a.length}, {name:"demo_B.xlsx", rows:b.length});
+
+  if ($("dedupeMode").value === "on") { const before = ALL.length; ALL = dedupeRows(ALL); log(`演示数据去重：${before} → ${ALL.length}`, "good"); }
+  renderFileList(); populateDropdowns();
+  const dates = ALL.map(r=>r.date).sort();
+  $("dateStart").value = dates[0]; $("dateEnd").value = dates[dates.length-1];
+  applyFilters(true);
+  log("已载入演示数据（含小时维度 + 全功能套件）", "good");
+});
+
+/** =========================
+ * Boot
+ * ========================= */
+renderFileList();
+populateDropdowns();
+applyFilters(true);
+</script>
+</body>
+</html>
