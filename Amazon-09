@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Ads Dashboard (Compact Pro v3.2 - Conflict Check)</title>
+  <title>Ads Dashboard (Compact Pro v3.3 - Export Added)</title>
 
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -623,7 +623,7 @@
   <main class="content">
     <section class="header">
       <div class="title">
-        <h1>Ads Performance Dashboard</h1>
+        <h1>朗容眼镜有限公司 Ads Performance Dashboard</h1>
         <div class="sub" id="subtitle">未导入数据。请导入同类报表（支持多文件）。</div>
       </div>
       <div class="actions">
@@ -867,6 +867,8 @@
               <button id="btnTypeKw" class="segBtn" data-type="keyword" type="button">关键词</button>
               <button id="btnTypeAsin" class="segBtn" data-type="asin" type="button">ASIN</button>
             </div>
+
+            <button class="btn primary" id="btnExportRank" type="button" style="padding: 6px 12px; font-size:11.8px;">导出榜单 CSV</button>
 
             <span class="tag bad">否定</span>
             <span class="tag warn">迁移</span>
@@ -2101,7 +2103,7 @@ const decideBidUp = (item) => {
 };
 
 /** =========================
- * Export negatives
+ * Export (CSV Functions)
  * ========================= */
 const exportNegativesCSV = () => {
   const rankBy = $("rankBy").value;
@@ -2140,9 +2142,6 @@ const exportNegativesCSV = () => {
   log(`已导出否定词 CSV：${filename}（${rows.length-1} 条）`, "good");
 };
 
-/** =========================
- * Export BID UP
- * ========================= */
 const exportBidUpCSV = () => {
   if (!VIEW.length) { log("导出失败：当前视图为空", "bad"); alert("导出失败：当前视图为空。"); return; }
   buildActionLists();
@@ -2159,6 +2158,37 @@ const exportBidUpCSV = () => {
   const filename = `bidup_${$("dateStart").value || "start"}_${$("dateEnd").value || "end"}.csv`;
   downloadText(filename, toCSV(rows));
   log(`已导出加价词 CSV：${filename}（${rows.length-1} 条）`, "good");
+};
+
+// ======================
+// NEW: Export Rank CSV Function
+// ======================
+const exportRankCSV = () => {
+    if (!RANK_ROWS.length) { alert("当前榜单为空，无数据可导出。"); return; }
+    // Define headers matching table
+    const headers = ["Name", "Spend", "Sales", "Orders", "Impressions", "Clicks", "CTR", "CPC", "CVR", "ACOS", "ROAS", "Action", "Reason"];
+    const rows = [headers];
+
+    for (const r of RANK_ROWS) {
+         rows.push([
+            r.name,
+            r.spend.toFixed(2),
+            r.sales.toFixed(2),
+            r.orders,
+            r.impr,
+            r.clicks,
+            (r.ctr * 100).toFixed(2) + "%",
+            r.cpc.toFixed(2),
+            (r.cvr * 100).toFixed(2) + "%",
+            (r.acos * 100).toFixed(2) + "%",
+            r.roas.toFixed(2),
+            r.action,
+            r.reason
+         ]);
+    }
+    const filename = `rank_list_${$("dateStart").value || "start"}_${$("dateEnd").value || "end"}.csv`;
+    downloadText(filename, toCSV(rows));
+    log(`已导出榜单 CSV：${filename}（${rows.length-1} 条）`, "good");
 };
 
 /** =========================
@@ -2489,6 +2519,8 @@ $("wfTable").addEventListener("click", (e)=>{
 $("btnExportNeg").addEventListener("click", exportNegativesCSV);
 $("btnExportBidUp").addEventListener("click", exportBidUpCSV);
 $("btnExportLongTail").addEventListener("click", exportLongTailCSV);
+// NEW: Bind Export Rank Button
+$("btnExportRank").addEventListener("click", exportRankCSV);
 
 $("btnRuleReset").addEventListener("click", () => {
   $("ruleSpendNeg").value = 30; $("ruleClicksNeg").value = 20; $("ruleRoasNeg").value = 1.5;
