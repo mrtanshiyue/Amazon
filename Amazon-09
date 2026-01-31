@@ -3,15 +3,25 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Ads Dashboard (Compact Pro v3.3 - Export Added)</title>
+  <title>Ads Dashboard (Compact Pro v4.5 - Search Tools)</title>
 
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
+  <script>
+    // 初始化主题
+    (() => {
+      const saved = localStorage.getItem("theme");
+      if (saved) document.documentElement.setAttribute("data-theme", saved);
+    })();
+  </script>
+
   <style>
-    /* UI 样式保持原封不动 */
+    /* ================= UI 样式 ================= */
     :root{
+      color-scheme: light; 
+        
       --bg:#f5f5f7;
       --card:#ffffff;
       --text:#1d1d1f;
@@ -27,7 +37,36 @@
       --softGood: rgba(26,127,55,.10);
       --softBad: rgba(180,35,24,.10);
       --softWarn: rgba(181,71,8,.12);
+      --input-bg: #ffffff;
+      --hover-bg: #fbfbfd;
+      --th-bg: #ffffff;
+      --chart-grid: rgba(229,229,234,.6);
     }
+
+    /* Dark Mode Variables */
+    [data-theme="dark"] {
+      color-scheme: dark;
+
+      --bg: #151516;
+      --card: #242426;
+      --text: #f5f5f7;
+      --muted: #a1a1a6;
+      --line: #38383a;
+      --shadow: 0 10px 30px rgba(0,0,0,.5);
+      --accent: #0a84ff;
+      --good: #30d158;
+      --bad: #ff453a;
+      --warn: #ff9f0a;
+      --chip: #3a3a3c;
+      --softGood: rgba(48, 209, 88, 0.15);
+      --softBad: rgba(255, 69, 58, 0.15);
+      --softWarn: rgba(255, 159, 10, 0.15);
+      --input-bg: #1c1c1e;
+      --hover-bg: #323234;
+      --th-bg: #242426;
+      --chart-grid: rgba(255,255,255,.1);
+    }
+
     *{box-sizing:border-box}
     body{
       margin:0;
@@ -38,8 +77,9 @@
       -moz-osx-font-smoothing:grayscale;
       font-weight: 500;
       font-size: 12.8px;
+      transition: background .3s ease, color .3s ease;
     }
-    
+      
     input, select, button, textarea {
       font-weight: 500;
       font-family: inherit;
@@ -60,13 +100,15 @@
       top:18px;
       height:calc(100vh - 36px);
       overflow:auto;
-      background:rgba(255,255,255,.7);
-      backdrop-filter:saturate(180%) blur(16px);
+      background:var(--card);
       border:1px solid var(--line);
       border-radius:var(--radius);
       padding:16px;
       box-shadow:var(--shadow);
+      transition: background .3s ease, border-color .3s ease;
     }
+    [data-theme="dark"] .sidebar { background: #242426; }
+
     .content{
       display:flex;
       flex-direction:column;
@@ -80,9 +122,10 @@
       gap:12px;
       padding:14px 16px;
       border-radius:var(--radius);
-      background:rgba(255,255,255,.75);
+      background:var(--card);
       border:1px solid var(--line);
       box-shadow:var(--shadow);
+      transition: background .3s ease, border-color .3s ease;
     }
     .title{ display:flex; flex-direction:column; gap:4px; }
     .title h1{
@@ -90,6 +133,7 @@
       font-size:18.5px;
       letter-spacing:-.2px;
       font-weight:800;
+      color: var(--text);
     }
     .title .sub{
       font-size:12.2px;
@@ -108,13 +152,13 @@
     .btn{
       appearance:none;
       border:1px solid var(--line);
-      background:#fff;
+      background:var(--card);
       border-radius:999px;
       padding:10px 12px;
       font-size:12.7px;
       cursor:pointer;
       color:var(--text);
-      transition:transform .08s ease, background .2s ease, border-color .2s ease;
+      transition:all .2s ease;
       display:inline-flex;
       align-items:center;
       gap:8px;
@@ -122,17 +166,29 @@
       user-select:none;
       white-space:nowrap;
     }
-    .btn:hover{ background:#fbfbfd; border-color:#d2d2d7; }
+    .btn:hover{ background:var(--hover-bg); border-color:var(--muted); }
     .btn:active{ transform:scale(.98); }
+      
     .btn.primary{
       border-color:rgba(0,113,227,.25);
       background:rgba(0,113,227,.08);
-      color:#0b62c6;
+      color:var(--accent);
     }
+    [data-theme="dark"] .btn.primary {
+       background: rgba(10, 132, 255, 0.15);
+       color: #409cff;
+       border-color: rgba(10, 132, 255, 0.3);
+    }
+
     .btn.danger{
       border-color:rgba(180,35,24,.22);
       background:rgba(180,35,24,.08);
-      color:#8a1f17;
+      color:var(--bad);
+    }
+    [data-theme="dark"] .btn.danger {
+       background: rgba(255, 69, 58, 0.15);
+       color: #ff453a;
+       border-color: rgba(255, 69, 58, 0.3);
     }
 
     .grid{
@@ -148,11 +204,12 @@
       box-shadow:var(--shadow);
       padding:14px;
       min-width:0;
+      transition: background .3s ease, border-color .3s ease;
     }
 
     .kpi{ grid-column: span 3; user-select:none; }
     .kpi .label{ font-size:12.2px; color:var(--muted); display:flex; justify-content:space-between; align-items:center; gap:10px; font-weight: 500; }
-    .kpi .value{ margin-top:6px; font-size:22.5px; font-weight:800; letter-spacing:-.3px; }
+    .kpi .value{ margin-top:6px; font-size:22.5px; font-weight:800; letter-spacing:-.3px; color:var(--text); }
     .kpi .meta{ margin-top:4px; font-size:11.8px; color:var(--muted); display:flex; gap:8px; flex-wrap:wrap; font-weight: 500; }
 
     .pill{
@@ -180,7 +237,7 @@
       margin-bottom:10px;
       flex-wrap:wrap;
     }
-    .cardTitle h2{ margin:0; font-size:14.2px; letter-spacing:-.2px; font-weight: 700; }
+    .cardTitle h2{ margin:0; font-size:14.2px; letter-spacing:-.2px; font-weight: 700; color:var(--text); }
     .cardTitle .hint{ font-size:12.2px; color:var(--muted); font-weight: 500; }
     .cardTitle .rightTools{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
 
@@ -204,16 +261,21 @@
       padding:10px 10px;
       border-radius:12px;
       border:1px solid var(--line);
-      background:#fff;
+      background:var(--input-bg);
+      color: var(--text);
       font-size:12.7px;
       outline:none;
-      transition:border-color .2s ease, box-shadow .2s ease;
+      transition:border-color .2s ease, box-shadow .2s ease, background .3s ease;
       appearance:none;
     }
     input[type="text"]:focus, input[type="date"]:focus, input[type="number"]:focus, select:focus{
-      border-color:rgba(0,113,227,.45);
+      border-color:var(--accent);
       box-shadow:0 0 0 4px rgba(0,113,227,.12);
     }
+    [data-theme="dark"] input[type="text"]:focus, [data-theme="dark"] input[type="date"]:focus, [data-theme="dark"] select:focus {
+        box-shadow: 0 0 0 4px rgba(10,132,255,0.2);
+    }
+
     .selectWrap{ position:relative; }
     .selectWrap:after{
       content:"▾";
@@ -234,23 +296,28 @@
     .chips{ display:flex; gap:8px; flex-wrap:wrap; }
     .chipBtn{
       border:1px solid var(--line);
-      background:#fff;
+      background:var(--input-bg);
       border-radius:999px;
       padding:8px 10px;
       font-size:12.2px;
       cursor:pointer;
+      color: var(--text);
     }
     .chipBtn.active{
       border-color:rgba(0,113,227,.35);
       background:rgba(0,113,227,.08);
-      color:#0b62c6;
+      color:var(--accent);
       font-weight: 600;
+    }
+    [data-theme="dark"] .chipBtn.active {
+        background: rgba(10,132,255,0.2);
+        color: #409cff;
     }
 
     .fileList{
       border:1px solid var(--line);
       border-radius:14px;
-      background:#fff;
+      background:var(--input-bg);
       padding:10px;
       max-height:180px;
       overflow:auto;
@@ -271,7 +338,7 @@
     }
     thead th{
       position:sticky; top:0;
-      background:var(--card);
+      background:var(--th-bg);
       border-bottom:1px solid var(--line);
       font-size:12.2px;
       color:var(--muted);
@@ -282,15 +349,29 @@
       user-select:none;
       z-index:2;
       font-weight: 600;
+      transition: background .3s ease;
     }
     tbody td{
       padding:10px 10px;
-      border-bottom:1px solid rgba(229,229,234,.7);
+      border-bottom:1px solid var(--line);
       font-size:12.8px;
       vertical-align:top;
       font-variant-numeric: tabular-nums; 
+      color: var(--text);
+       
+      /* [新增] 防止超长词撑爆布局，超过 400px 显示省略号 */
+      max-width: 400px; 
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap; 
     }
-    tbody tr:hover{ background:#fbfbfd; }
+    /* 针对特定列放宽限制，例如名称列，让内容可以换行看清楚 */
+    #rankTable td:first-child, #negListTable td:nth-child(2), #bidUpTable td:nth-child(2) {
+        white-space: normal; 
+        word-break: break-word;
+    }
+     
+    tbody tr:hover{ background:var(--hover-bg); }
     tbody tr:last-child td{ border-bottom:none; }
 
     .tag{
@@ -305,15 +386,15 @@
       user-select:none;
       font-weight: 600;
     }
-    .tag.good{ color:var(--good); background:var(--softGood); border-color:rgba(26,127,55,.18); }
-    .tag.bad{ color:var(--bad); background:var(--softBad); border-color:rgba(180,35,24,.18); }
-    .tag.warn{ color:var(--warn); background:var(--softWarn); border-color:rgba(181,71,8,.20); }
+    .tag.good{ color:var(--good); background:var(--softGood); border-color:transparent; }
+    .tag.bad{ color:var(--bad); background:var(--softBad); border-color:transparent; }
+    .tag.warn{ color:var(--warn); background:var(--softWarn); border-color:transparent; }
     .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
 
     .seg{
       display:inline-flex;
       border:1px solid var(--line);
-      background:#fff;
+      background:var(--input-bg);
       border-radius:999px;
       overflow:hidden;
       box-shadow:0 6px 16px rgba(0,0,0,.06);
@@ -329,8 +410,11 @@
     }
     .segBtn.active{
       background:rgba(0,113,227,.10);
-      color:#0b62c6;
+      color:var(--accent);
       font-weight: 600;
+    }
+    [data-theme="dark"] .segBtn.active {
+        background: rgba(10,132,255,0.2);
     }
 
     .miniInput{
@@ -346,6 +430,7 @@
       font-size:12.2px !important;
     }
 
+    /* 对齐调整 */
     #autoManualTable th:last-child, 
     #autoManualTable td:last-child,
     #longTailTable th:last-child,
@@ -354,14 +439,10 @@
     #weekdayTable td:last-child,
     #cpcDistTable th:last-child,
     #cpcDistTable td:last-child,
-    #cvrDistTable th:last-child,
-    #cvrDistTable td:last-child,
     #lengthTable th:last-child,
     #lengthTable td:last-child,
     #matchTypeTable th:last-child,
     #matchTypeTable td:last-child,
-    #budgetHealthTable th:last-child,
-    #budgetHealthTable td:last-child,
     #conflictTable th:last-child,
     #conflictTable td:last-child {
       text-align: left; 
@@ -378,7 +459,7 @@
     .bar-track {
         flex: 1;
         height: 6px; 
-        background: #e5e5ea; 
+        background: var(--line); 
         border-radius: 3px; 
         overflow: hidden; 
         display: flex;
@@ -393,13 +474,46 @@
       justify-content: space-between;
       align-items: center;
       padding: 12px;
-      background: #fbfbfd;
+      background: var(--hover-bg);
       border: 1px solid var(--line);
       border-radius: 12px;
     }
     .pareto-left { display: flex; flex-direction: column; gap: 4px; }
     .pareto-right { font-weight: 800; font-size: 16px; color: var(--text); }
     .pareto-desc { font-size: 11.5px; color: var(--muted); }
+
+    /* Search Action Icon Style */
+    .action-icon {
+        cursor: pointer;
+        margin-left: 8px;
+        opacity: 0.5;
+        font-size: 14px;
+        vertical-align: middle;
+        transition: opacity 0.2s, transform 0.2s;
+        display: inline-block;
+        /* 防止图标被选中复制 */
+        user-select: none;
+        -webkit-user-select: none;
+    }
+    .action-icon:hover {
+        opacity: 1;
+        transform: scale(1.2);
+    }
+    .search-clear-btn {
+        background: none;
+        border: none;
+        color: var(--muted);
+        cursor: pointer;
+        padding: 0 8px;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        border-radius: 8px;
+    }
+    .search-clear-btn:hover {
+        color: var(--bad);
+        background: var(--hover-bg);
+    }
 
     @media (max-width: 1400px){
       .app{ max-width: 100vw; }
@@ -456,11 +570,6 @@
         <div id="fileList" class="fileList"><div class="small">暂无</div></div>
       </div>
 
-      <div class="fieldRow">
-        <label>导入日志</label>
-        <div id="logBox" class="fileList" style="max-height:220px"><div class="small">暂无</div></div>
-      </div>
-
       <div class="row2">
         <div class="fieldRow">
           <label>日期开始</label>
@@ -509,8 +618,26 @@
       </div>
 
       <div class="fieldRow">
-        <label>客户搜索词（Search Term）模糊搜索</label>
-        <input id="filterSearchTerm" type="text" placeholder="例如: blue light / magnification / women / cat eye / b07ybhgt31" />
+        <label>广告类型 (Ad Type)</label>
+        <div class="selectWrap">
+            <select id="filterAdType">
+                <option value="" selected>全部 (All)</option>
+                <option value="manual">手动广告 (Manual)</option>
+                <option value="auto">自动广告 (Auto)</option>
+            </select>
+        </div>
+      </div>
+
+      <div class="fieldRow">
+        <label>客户搜索词（Search Term）</label>
+        <div style="display: flex; gap: 6px;">
+            <input id="filterSearchTerm" type="text" placeholder="例如: blue light / magnification" style="flex:1" />
+            <button id="btnClearSearch" class="btn" type="button" style="padding:0 10px; font-size:14px;" title="清空搜索词">✕</button>
+        </div>
+        <div style="display:flex; align-items:center; gap:6px; margin-top:6px; padding-left:2px;">
+           <input type="checkbox" id="filterSearchExact" style="width:14px; height:14px; appearance:auto; -webkit-appearance:checkbox; margin:0; cursor:pointer">
+           <label for="filterSearchExact" style="margin:0; cursor:pointer; font-size:12px; color:var(--text);">精准搜索 (Exact Match)</label>
+        </div>
       </div>
       <div class="small">筛选改动将自动生效（无需点击应用）</div>
     </div>
@@ -535,7 +662,7 @@
       <div class="row2">
         <div class="fieldRow">
           <label>Top N</label>
-          <input id="rankTopN" type="number" step="1" value="30" />
+          <input id="rankTopN" type="number" step="1" value="120" />
         </div>
         <div class="fieldRow">
           <label>最大导入行数（防卡死）</label>
@@ -618,6 +745,14 @@
       <div class="fieldRow"><button class="btn" id="btnReset" type="button">重置筛选</button></div>
       <div class="fieldRow"><button class="btn danger" id="btnClearAll" type="button">清空已导入数据</button></div>
     </div>
+
+    <div class="fieldGroup">
+      <div class="fieldRow">
+        <label>导入日志</label>
+        <div id="logBox" class="fileList" style="max-height:220px"><div class="small">暂无</div></div>
+      </div>
+    </div>
+
   </aside>
 
   <main class="content">
@@ -627,21 +762,45 @@
         <div class="sub" id="subtitle">未导入数据。请导入同类报表（支持多文件）。</div>
       </div>
       <div class="actions">
+        <button class="btn" id="btnTheme" type="button">🌗 深色/浅色</button>
         <button class="btn" id="btnCheck" type="button">依赖自检</button>
-        <button class="btn" id="btnDemo" type="button">载入演示数据（两文件合并）</button>
       </div>
     </section>
 
     <section class="grid" id="kpiGrid"></section>
 
     <section class="grid">
-      
+        
       <div class="card chartCard">
         <div class="cardTitle">
           <h2>每日趋势</h2>
           <div class="hint">花费 / 销售额 / 订单数 / ACOS / ROAS</div>
         </div>
         <div class="chartWrap tall"><canvas id="trendChart"></canvas></div>
+      </div>
+
+      <div class="card tableCard">
+        <div class="cardTitle">
+          <h2>周维度分析 (Weekday Performance)</h2>
+          <div class="hint">发现一周中的最佳销售日/亏损日 (Mon-Sun)</div>
+        </div>
+        <div class="table-container">
+          <table id="weekdayTable">
+            <thead>
+              <tr>
+                <th>星期</th>
+                <th style="width:200px;">销售额热度</th>
+                <th>花费</th>
+                <th>销售额</th>
+                <th>订单数</th>
+                <th>ROAS</th>
+                <th>ACOS</th>
+                <th>CPC</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </div>
 
       <div class="card tableCard" id="autoManualCard">
@@ -689,57 +848,6 @@
         </div>
       </div>
 
-      <div class="card tableCard" id="budgetHealthCard">
-        <div class="cardTitle">
-          <h2>预算健康度分析 (Budget Health Check)</h2>
-          <div class="hint">花费去向：纯浪费(0单) vs 低效能(ROAS低) vs 高效能</div>
-        </div>
-        <div class="table-container">
-          <table id="budgetHealthTable">
-            <thead>
-              <tr>
-                <th>类型</th>
-                <th style="width:200px;">花费占比</th>
-                <th>花费</th>
-                <th>销售额</th>
-                <th>订单数</th>
-                <th>ROAS</th>
-                <th>ACOS</th>
-                <th>说明</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-        <div class="small" style="margin-top:10px;">
-           规则联动：低效能判定标准 = 左侧“否定 ROAS < N”的设定值。
-        </div>
-      </div>
-
-      <div class="card tableCard">
-        <div class="cardTitle">
-          <h2>周维度分析 (Weekday Performance)</h2>
-          <div class="hint">发现一周中的最佳销售日/亏损日 (Mon-Sun)</div>
-        </div>
-        <div class="table-container">
-          <table id="weekdayTable">
-            <thead>
-              <tr>
-                <th>星期</th>
-                <th style="width:200px;">销售额热度</th>
-                <th>花费</th>
-                <th>销售额</th>
-                <th>订单数</th>
-                <th>ROAS</th>
-                <th>ACOS</th>
-                <th>CPC</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
-
       <div class="card tableCard" id="lengthCard">
         <div class="cardTitle">
           <h2>词长效能分析 (Keyword Length Analysis)</h2>
@@ -777,7 +885,8 @@
             <thead>
               <tr>
                 <th>CPC 区间</th>
-                <th style="width:200px;">销售额占比</th>
+                <th style="width:160px;">销售额占比</th>
+                <th style="width:160px;">订单占比 (成交出价)</th>
                 <th>花费</th>
                 <th>销售额</th>
                 <th>订单数</th>
@@ -790,71 +899,7 @@
           </table>
         </div>
         <div class="small" style="margin-top:10px;">
-          说明：根据每个词的实际平均 CPC 归类。1.00-2.00 区间已按 0.1 细分，助你精准定位最佳出价。
-        </div>
-      </div>
-
-      <div class="card tableCard">
-        <div class="cardTitle">
-          <h2>转化率阶梯分析 (CVR Efficiency Tiers)</h2>
-          <div class="hint">流量质量检测：0转化(浪费) vs 高转化(金矿)</div>
-        </div>
-        <div class="table-container">
-          <table id="cvrDistTable">
-            <thead>
-              <tr>
-                <th>转化率 (CVR) 区间</th>
-                <th style="width:200px;">花费占比 (Spend Share)</th>
-                <th>花费</th>
-                <th>销售额</th>
-                <th>订单数</th>
-                <th>ROAS</th>
-                <th>ACOS</th>
-                <th>CPC</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-        <div class="small" style="margin-top:10px;">
-          说明：CVR=0% 的区间是纯浪费，重点检查；CVR > 20% 的区间是高意图流量，应检查是否还有提价/扩词空间。
-        </div>
-      </div>
-
-      <div class="card" id="paretoCard" style="grid-column: span 12;">
-        <div class="cardTitle">
-            <h2>帕累托/二八法则分析 (Pareto 80/20 Analysis)</h2>
-            <div class="hint">快速识别账户的“集中度”和“浪费度”</div>
-        </div>
-        <div class="pareto-box" id="paretoContent">
-            </div>
-      </div>
-
-      <div class="card tableCard" id="conflictCard">
-        <div class="cardTitle">
-          <h2>内部竞争/关键词冲突检测 (Conflict & Cannibalization)</h2>
-          <div class="hint">同一 Search Term 出现于多个广告组（权重分散）</div>
-          <div class="rightTools">
-             <span class="pill" style="background:#fff3cd; color:#b54708; border-color:#ffeeba">建议：点击冲突词 → 筛选 → 关掉表现差的组</span>
-          </div>
-        </div>
-        <div class="table-container" style="max-height:480px;">
-          <table id="conflictTable">
-            <thead>
-              <tr>
-                <th>搜索词 (Search Term)</th>
-                <th>冲突位置数 (Count)</th>
-                <th style="width:300px;">涉及广告组 (Locations)</th>
-                <th>总花费</th>
-                <th>总订单</th>
-                <th>ROAS</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-        <div class="small" style="margin-top:10px;">
-          原理：列出在 2 个或以上不同广告组（Campaign+AdGroup）中消耗预算的词。如果该词在多个组表现差异巨大，建议将预算集中到表现最好的组，否定差的组。
+          说明：根据每个词的实际平均 CPC 归类。<b>订单占比</b>列展示了“成交出价占比”，帮助你找到转化最集中的出价区间。
         </div>
       </div>
 
@@ -873,7 +918,7 @@
             <span class="tag bad">否定</span>
             <span class="tag warn">迁移</span>
             <span class="tag good">保留</span>
-            <span class="hint">点击表头排序</span>
+            <span class="hint">点击表头排序，点击🔍精准搜索</span>
           </div>
         </div>
 
@@ -900,6 +945,40 @@
 
         <div class="small" style="margin-top:10px;">
           口径：ACOS=花费/销售额；ROAS=销售额/花费；CTR=点击量/展示量；CVR=订单数/点击量
+        </div>
+      </div>
+
+      <div class="card tableCard" id="longTailCard">
+        <div class="cardTitle">
+          <h2>长尾词挖掘 (Long-Tail Keyword Mining)</h2>
+          <div class="rightTools">
+             <span class="pill">单词数 ≥</span>
+             <input id="ltMinWords" class="miniInput" type="number" step="1" value="3" title="Search Term 包含的单词数" />
+             <span class="pill">订单 ≥</span>
+             <input id="ltMinOrders" class="miniInput" type="number" step="1" value="2" title="至少产生订单数" />
+             <span class="pill">ROAS ≥</span>
+             <input id="ltMinRoas" class="miniInput" type="number" step="0.1" value="2.0" title="ROAS 门槛" />
+             <button class="btn primary" id="btnExportLongTail" type="button">导出长尾词 CSV</button>
+          </div>
+        </div>
+        <div class="table-container" style="max-height:480px;">
+          <table id="longTailTable">
+            <thead>
+              <tr>
+                <th>搜索词 (Search Term)</th>
+                <th>单词数</th>
+                <th>花费</th>
+                <th>销售额</th>
+                <th>订单数</th>
+                <th>ROAS</th>
+                <th>ACOS</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="small" style="margin-top:10px;">
+          逻辑：筛选出非 ASIN、单词数达标、且有出单记录的精准长尾词。建议将高 ROAS 的长尾词投放 Exact (精准匹配)。
         </div>
       </div>
 
@@ -943,37 +1022,31 @@
         </div>
       </div>
 
-      <div class="card tableCard" id="longTailCard">
+      <div class="card tableCard" id="conflictCard">
         <div class="cardTitle">
-          <h2>长尾词挖掘 (Long-Tail Keyword Mining)</h2>
+          <h2>内部竞争/关键词冲突检测 (Conflict & Cannibalization)</h2>
+          <div class="hint">同一 Search Term 出现于多个广告组（权重分散）</div>
           <div class="rightTools">
-             <span class="pill">单词数 ≥</span>
-             <input id="ltMinWords" class="miniInput" type="number" step="1" value="3" title="Search Term 包含的单词数" />
-             <span class="pill">订单 ≥</span>
-             <input id="ltMinOrders" class="miniInput" type="number" step="1" value="2" title="至少产生订单数" />
-             <span class="pill">ROAS ≥</span>
-             <input id="ltMinRoas" class="miniInput" type="number" step="0.1" value="2.0" title="ROAS 门槛" />
-             <button class="btn primary" id="btnExportLongTail" type="button">导出长尾词 CSV</button>
+             <span class="pill" style="background:var(--softWarn); color:var(--warn); border-color:transparent">建议：点击冲突词 → 筛选 → 关掉表现差的组</span>
           </div>
         </div>
         <div class="table-container" style="max-height:480px;">
-          <table id="longTailTable">
+          <table id="conflictTable">
             <thead>
               <tr>
                 <th>搜索词 (Search Term)</th>
-                <th>单词数</th>
-                <th>花费</th>
-                <th>销售额</th>
-                <th>订单数</th>
+                <th>冲突位置数 (Count)</th>
+                <th style="width:300px;">涉及广告组 (Locations)</th>
+                <th>总花费</th>
+                <th>总订单</th>
                 <th>ROAS</th>
-                <th>ACOS</th>
               </tr>
             </thead>
             <tbody></tbody>
           </table>
         </div>
         <div class="small" style="margin-top:10px;">
-          逻辑：筛选出非 ASIN、单词数达标、且有出单记录的精准长尾词。建议将高 ROAS 的长尾词投放 Exact (精准匹配)。
+          原理：列出在 2 个或以上不同广告组（Campaign+AdGroup）中消耗预算的词。如果该词在多个组表现差异巨大，建议将预算集中到表现最好的组，否定差的组。
         </div>
       </div>
 
@@ -1064,33 +1137,68 @@ const fmtMoney = (v) => isFinite(v) ? new Intl.NumberFormat("en-US",{maximumFrac
 const fmtInt = (v) => new Intl.NumberFormat("en-US",{maximumFractionDigits:0}).format(v||0);
 const fmtPct = (v) => (isFinite(v) ? (v*100).toFixed(2)+"%" : "0.00%");
 
-// FIX: More robust number parsing to handle "$ 1,000.00" or similar weird formats
+// [优化] 提升数值解析健壮性 - 修复了货币符号和千分位可能导致的 NaN 问题
 const safeNum = (x) => {
   if (typeof x === "number") return isFinite(x) ? x : 0;
-  const s = String(x ?? "").trim();
+  if (!x) return 0; // 处理 null/undefined/""
+  
+  const s = String(x).trim();
   if (!s) return 0;
-  const isPercent = s.includes("%");
-  // Remove all non-numeric chars except dot and minus
-  const n = Number(s.replace(/[^0-9.\-]/g, ""));
-  if (isFinite(n)) return isPercent ? n / 100 : n;
-  return 0;
+  
+  // 移除常见的货币符号和逗号，保留数字、小数点和负号
+  // 注意：如果您的 Excel 使用逗号作为小数点（如德语环境），此处需调整
+  const clean = s.replace(/[^0-9.\-]/g, "");
+  
+  // 修复多重小数点问题（保留第一个）
+  const parts = clean.split('.');
+  const sanitized = parts.length > 1 ? parts.shift() + '.' + parts.join('') : clean;
+
+  const n = parseFloat(sanitized); 
+  return isFinite(n) ? n : 0;
 };
 
-// FIX: Strictly parse date string to avoid timezone shifts
-// Returns YYYY-MM-DD string
+// [修复] 日期解析逻辑 (Fix Safari/Excel Compatibility)
 const toISODate = (d) => {
+  if (d instanceof Date) return isNaN(d) ? "" : d.toISOString().slice(0,10);
+
+  // Excel Serial Date
   if (typeof d === "number" && isFinite(d)) {
-    // Excel Serial Date
-    const dt = new Date(Math.round((d - 25569) * 86400 * 1000));
-    return isNaN(dt) ? "" : dt.toISOString().slice(0,10);
+    // 25569 = Days between 1900-01-01 and 1970-01-01
+    // 加上 12 小时的缓冲防止时区导致的日期回退
+    const dateObj = new Date((d - 25569) * 86400000 + 43200000);
+    return dateObj.toISOString().slice(0,10);
   }
+
   const s = String(d || "").trim();
-  // Attempt to parse YYYY-MM-DD or MM/DD/YYYY
+  if (!s) return "";
+  
+  // 匹配 YYYY-MM-DD 或 YYYY/MM/DD
+  const matchISO = s.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/);
+  if (matchISO) {
+    const y = parseInt(matchISO[1], 10);
+    const m = parseInt(matchISO[2], 10);
+    const day = parseInt(matchISO[3], 10);
+    // 使用本地时间构造，避免 UTC 偏移问题
+    const dt = new Date(y, m - 1, day, 12, 0, 0); 
+    return dt.toISOString().slice(0,10);
+  }
+
+  // Fallback for M/D/YY or other formats
   const dt = new Date(s);
   if (isNaN(dt.getTime())) return "";
-  
-  // Return UTC ISO component to standardise
   return dt.toISOString().slice(0,10); 
+};
+
+// [新增] 生成简单时间戳字符串 (用于文件名去重)
+const getTs = () => {
+  const now = new Date();
+  const YYYY = now.getFullYear();
+  const MM = String(now.getMonth() + 1).padStart(2, '0');
+  const DD = String(now.getDate()).padStart(2, '0');
+  const HH = String(now.getHours()).padStart(2, '0');
+  const mm = String(now.getMinutes()).padStart(2, '0');
+  const ss = String(now.getSeconds()).padStart(2, '0');
+  return `${YYYY}${MM}${DD}_${HH}${mm}${ss}`;
 };
 
 const escapeHtml = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[c]);
@@ -1121,7 +1229,16 @@ const libsCheck = () => {
   return !missing.length;
 };
 
-// FIX: Add BOM for Excel UTF-8 compatibility
+// [修复] CSV 注入防御 (Formula Injection Protection)
+const toCSV = (rows) => rows.map(r => r.map(v => {
+  let s = String(v ?? "");
+  // 如果首字符是 = + - @，在前面加单引号，防止 Excel 自动执行
+  if (/^[=+\-@]/.test(s)) {
+      s = "'" + s;
+  }
+  return /[",\n]/.test(s) ? `"${s.replaceAll('"','""')}"` : s;
+}).join(",")).join("\n");
+
 const downloadText = (filename, text) => {
   const blob = new Blob(["\uFEFF"+text], {type:"text/plain;charset=utf-8"});
   const a = document.createElement("a");
@@ -1130,10 +1247,6 @@ const downloadText = (filename, text) => {
   document.body.appendChild(a); a.click(); a.remove();
   URL.revokeObjectURL(a.href);
 };
-const toCSV = (rows) => rows.map(r => r.map(v => {
-  const s = String(v ?? "");
-  return /[",\n]/.test(s) ? `"${s.replaceAll('"','""')}"` : s;
-}).join(",")).join("\n");
 
 /** =========================
  * Root Mining
@@ -1202,7 +1315,7 @@ const COL_MAP_ALIASES = {
   clicks: ["点击量","Clicks"],
   spend: ["花费","Spend","Cost"],
   sales7d: ["7天总销售额","7 Day Total Sales","7-day total sales","7 day total sales","Total Sales","Est. Total Sales"],
-  orders7d: ["7天总订单数","7天总订单数(#)","7天总订单数 (#)","7天总订单数（#）","7 Day Total Orders (#)","7-day total orders","7 day total orders","Total Orders","Est. Total Orders"],
+  orders7d: ["7天总订单数","7天总订单数 (#)","7天总订单数(#)","7天总订单数（#）","7 Day Total Orders (#)","7-day total orders","7 day total orders","Total Orders","Est. Total Orders"],
   ctr: ["点击率","CTR"],
   cpc: ["每次点击费用","CPC","Cost per click","Cost per click (CPC)"],
   cvr: ["7天的转化率","7 Day Conversion Rate","7-day conversion rate","7 day conversion rate"],
@@ -1227,15 +1340,23 @@ const buildMap = (rows) => {
   return map;
 };
 const normalizeRow = (raw, map, sourceFile) => {
+  // [安全] 增加空值检查，防止报错
+  if (!raw) return null;
+  
   const impr = safeNum(raw[map.impr]), clicks = safeNum(raw[map.clicks]), spend = safeNum(raw[map.spend]);
   const sales = safeNum(raw[map.sales7d]), orders = safeNum(raw[map.orders7d]);
   
+  // [优化] 预计算小写 searchTerm 供筛选使用
+  const st = String(raw[map.searchTerm] ?? "").trim();
+
   return {
     sourceFile, date: toISODate(raw[map.date]),
     portfolio: String(raw[map.portfolio] ?? "").trim(), campaign: String(raw[map.campaign] ?? "").trim(),
     adGroup: String(raw[map.adGroup] ?? "").trim(), targeting: String(raw[map.targeting] ?? "").trim(),
-    matchType: String(raw[map.matchType] ?? "").trim(), searchTerm: String(raw[map.searchTerm] ?? "").trim(),
-    searchTermRoot: searchTermToRoot(String(raw[map.searchTerm] ?? "").trim()),
+    matchType: String(raw[map.matchType] ?? "").trim(), 
+    searchTerm: st,
+    searchTermLower: st.toLowerCase(), // 预计算，提速明显
+    searchTermRoot: searchTermToRoot(st),
     impr, clicks, spend, sales, orders,
     ctr: map.ctr ? safeNum(raw[map.ctr]) : (impr > 0 ? clicks / impr : 0),
     cpc: map.cpc ? safeNum(raw[map.cpc]) : (clicks > 0 ? spend / clicks : 0),
@@ -1246,15 +1367,21 @@ const normalizeRow = (raw, map, sourceFile) => {
 };
 
 /** =========================
- * ASIN detector
+ * ASIN detector (Optimized)
  * ========================= */
+const ASIN_CANDIDATE_RE = /[A-Z0-9]{10}/ig;
+const ASIN_STRICT_RE = /^[B0-9][A-Z0-9]{9}$/i;
+
 const isASINLike = (s) => {
   const x = String(s || "").trim();
   if (!x) return false;
-  const candidates = x.match(/[A-Z0-9]{10}/ig);
+  // Use regex to find candidates
+  const candidates = x.match(ASIN_CANDIDATE_RE);
   if (!candidates) return false;
-  const hasDigit = (v) => /\d/.test(v);
-  for (const c of candidates) if ((/^B[A-Z0-9]{9}$/i.test(c) || /^[A-Z0-9]{10}$/i.test(c)) && hasDigit(c)) return true;
+  
+  for (const c of candidates) {
+      if (ASIN_STRICT_RE.test(c) && /\d/.test(c)) return true;
+  }
   return /asin\s*=\s*[A-Z0-9]{10}/i.test(x) || /asin\s*:\s*[A-Z0-9]{10}/i.test(x);
 };
 const detectRowType = (name, rankBy) => (rankBy === "searchTerm" || rankBy === "searchTermRoot" || rankBy === "targeting") ? (isASINLike(name) ? "asin" : "keyword") : "other";
@@ -1271,7 +1398,8 @@ let LONG_TAIL_ROWS = [];
 /** =========================
  * Importers
  * ========================= */
-const parseCSV = (file) => new Promise((r,j)=>Papa.parse(file, {header:true, skipEmptyLines:true, complete:res=>r(res.data), error:j}));
+// [优化] skipEmptyLines: 'greedy' 避免文件末尾空行产生空对象
+const parseCSV = (file) => new Promise((r,j)=>Papa.parse(file, {header:true, skipEmptyLines: 'greedy', complete:res=>r(res.data), error:j}));
 const parseXLSX = (file) => new Promise((r,j)=>{
   const reader = new FileReader();
   reader.onload = (e)=>{try{const wb=XLSX.read(new Uint8Array(e.target.result),{type:"array"});r(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:""}));}catch(err){j(err);}};
@@ -1298,7 +1426,6 @@ const importMultipleFiles = async (files) => {
   if (mergeMode === "replace") { 
     ALL = []; 
     importedFiles = []; 
-    // FIX: Memory leak - clear root cache on replace
     rootCache.clear(); 
     log("Replace 模式：已清空历史数据与缓存", "warn"); 
   }
@@ -1316,7 +1443,7 @@ const importMultipleFiles = async (files) => {
       if (rows.length > maxRows) { log(`警告：${name} 行数 ${rows.length.toLocaleString()} 超过 maxRows，将截断到 ${maxRows.toLocaleString()}`, "warn"); rows = rows.slice(0, maxRows); }
 
       log(`识别字段映射：${name}`); const map = buildMap(rows);
-      log(`标准化字段 + 生成 Root：${name}`); const normalized = rows.map(r => normalizeRow(r, map, name)).filter(r => r.date);
+      log(`标准化字段 + 生成 Root：${name}`); const normalized = rows.map(r => normalizeRow(r, map, name)).filter(r => r && r.date);
       log(`追加：${name} → ${normalized.length.toLocaleString()} 行`, "good");
       ALL = ALL.concat(normalized); importedFiles.push({ name, rows: normalized.length });
       await new Promise(r => setTimeout(r, 0));
@@ -1387,7 +1514,7 @@ const wireCascade = () => {
  * Aggregations
  * ========================= */
 const withinDate = (r, start, end) => (!start || r.date >= start) && (!end || r.date <= end);
-const includesSearch = (r, q) => (!q || (r.searchTerm || "").toLowerCase().includes(q.toLowerCase()));
+
 const sumMetrics = (rows) => {
   const sums = { impr:0, clicks:0, spend:0, sales:0, orders:0 };
   for (const r of rows) for (const k in sums) sums[k] += r[k];
@@ -1407,20 +1534,38 @@ const groupBy = (rows, keyFn) => {
 };
 
 /** =========================
- * Word Frequency Builder
+ * Word Frequency Builder (Optimized)
  * ========================= */
+// [优化] 词频统计：增加 Token 缓存，避免重复拆分相同 Search Term
+const tokenCache = new Map(); // 缓存: term -> words[]
+
 const buildWordStats = () => {
   const minFreq = Math.max(1, Math.floor(safeNum($("wfMinFreq")?.value ?? 3)));
   const minSpend = Math.max(0, safeNum($("wfMinSpend")?.value ?? 10));
   const mp = new Map();
 
+  // 清理过大的缓存防止内存溢出
+  if(tokenCache.size > 20000) tokenCache.clear();
+
   for (const r of VIEW) {
     const term = r.searchTerm || "";
-    let words = [];
-    if (WF_MODE === "token") words = tokenize(term);
-    else if (WF_MODE === "bigram") words = ngrams(tokenize(term), 2);
-    else if (WF_MODE === "trigram") words = ngrams(tokenize(term), 3);
-    else if (WF_MODE === "mag") words = extractMagnification(term);
+    if (!term) continue;
+
+    // 1. 尝试从缓存获取分词结果
+    let words;
+    const cacheKey = `${WF_MODE}:${term}`; // 区分模式缓存
+    
+    if (tokenCache.has(cacheKey)) {
+      words = tokenCache.get(cacheKey);
+    } else {
+      // 2. 缓存未命中，执行计算
+      if (WF_MODE === "token") words = tokenize(term);
+      else if (WF_MODE === "bigram") words = ngrams(tokenize(term), 2);
+      else if (WF_MODE === "trigram") words = ngrams(tokenize(term), 3);
+      else if (WF_MODE === "mag") words = extractMagnification(term);
+      
+      tokenCache.set(cacheKey, words);
+    }
 
     const uniqueWords = new Set(words); 
     for (const w of uniqueWords) {
@@ -1446,7 +1591,11 @@ const buildWordStats = () => {
   out.sort((a,b)=>{
     const av = (key==="word"||key==="action") ? String(a[key]||"") : (a[key] ?? 0);
     const bv = (key==="word"||key==="action") ? String(b[key]||"") : (b[key] ?? 0);
-    return (typeof av === "string" ? av.localeCompare(bv) : (av > bv ? 1 : -1)) * mul;
+    // [优化] 移除 localeCompare，数字和英文混合排序用 > < 更快
+    if (typeof av === "string" && typeof bv === "string") {
+        return av.localeCompare(bv) * mul;
+    }
+    return (av > bv ? 1 : -1) * mul;
   });
   return out.slice(0, 100);
 };
@@ -1524,7 +1673,7 @@ const exportLongTailCSV = () => {
             c.term, c.wordCount, c.spend.toFixed(2), c.sales.toFixed(2), c.orders, c.roas.toFixed(2), (c.acos*100).toFixed(2)+"%"
         ]);
     }
-    const filename = `long_tail_mining_${$("dateStart").value}.csv`;
+    const filename = `long_tail_mining_${$("dateStart").value}_${getTs()}.csv`;
     downloadText(filename, toCSV(rows));
 };
 
@@ -1539,13 +1688,16 @@ const renderWeekdayAnalysis = () => {
   const days = ["周日 (Sun)", "周一 (Mon)", "周二 (Tue)", "周三 (Wed)", "周四 (Thu)", "周五 (Fri)", "周六 (Sat)"];
   const bins = days.map(()=>[]);
   
-  // FIX: Manual parsing to ensure "Monday" in string is "Monday" in chart
   for (const r of VIEW) {
     if(!r.date) continue;
     const parts = r.date.split("-");
     if(parts.length === 3) {
-       // Construct date as local, using 12:00 to avoid any DST shifts
-       const localDate = new Date(Number(parts[0]), Number(parts[1])-1, Number(parts[2]), 12, 0, 0);
+       // Construct date as local, using 12:00 to avoid any DST shifts or timezone boundary issues
+       // [优化] 使用更兼容的 Date 构造方法
+       const y = parseInt(parts[0], 10);
+       const m = parseInt(parts[1], 10) - 1;
+       const d = parseInt(parts[2], 10);
+       const localDate = new Date(y, m, d, 12, 0, 0);
        bins[localDate.getDay()].push(r);
     }
   }
@@ -1554,7 +1706,7 @@ const renderWeekdayAnalysis = () => {
   const totalSales = sumMetrics(VIEW).sales || 1;
 
   tbody.innerHTML = result.map(row => {
-    const salesPct = (row.sales / totalSales);
+    const salesPct = totalSales > 0 ? (row.sales / totalSales) : 0;
     const barHtml = `
       <div class="bar-row">
         <div style="width:40px;text-align:right;color:var(--muted);margin-right:6px;">${(salesPct*100).toFixed(1)}%</div>
@@ -1586,14 +1738,13 @@ const renderCPCDistribution = () => {
   if (!tbody) return;
   if (!VIEW.length) { tbody.innerHTML = ""; return; }
 
-  // Define Buckets
   const buckets = [
-      { label: "< 0.50", min:0, max:0.5, rows: [] },
-      { label: "0.50 - 1.00", min:0.5, max:1.0, rows: [] }
+      { label: "< 0.50", min:0, max:0.5, rows: [] }
   ];
 
-  // Granular 1.00 - 2.00 in 0.1 steps
-  for (let i = 10; i < 20; i++) {
+  // [修改] 0.50 - 1.50 均按 0.1 步长显示
+  // i=5 -> 0.5; i<15 -> 1.4
+  for (let i = 5; i < 15; i++) {
       const start = i / 10;
       const end = (i + 1) / 10;
       buckets.push({
@@ -1604,11 +1755,9 @@ const renderCPCDistribution = () => {
       });
   }
 
-  // Higher Buckets
+  // [新增] 1.50 之后的兜底区间 (因为最高出价 1.5)
   buckets.push(
-      { label: "2.00 - 3.00", min:2.0, max:3.0, rows: [] },
-      { label: "3.00 - 5.00", min:3.0, max:5.0, rows: [] },
-      { label: "> 5.00", min:5.0, max:9999, rows: [] }
+      { label: "> 1.50", min:1.5, max:9999, rows: [] }
   );
 
   for (const r of VIEW) {
@@ -1623,14 +1772,19 @@ const renderCPCDistribution = () => {
   }
 
   const result = buckets.map(b => ({ ...b, metrics: sumMetrics(b.rows) }));
-  const totalSales = sumMetrics(VIEW).sales || 1;
+  
+  // Calculate Totals
+  const totalMetrics = sumMetrics(VIEW);
+  const totalSales = totalMetrics.sales || 1;
+  const totalOrders = totalMetrics.orders || 1; // Avoid division by zero
 
   tbody.innerHTML = result.map(b => {
     const m = b.metrics;
     if (m.impr === 0 && m.spend === 0) return ""; 
     
-    const salesPct = (m.sales / totalSales);
-    const barHtml = `
+    // Sales Percentage
+    const salesPct = totalSales > 0 ? (m.sales / totalSales) : 0;
+    const salesBarHtml = `
       <div class="bar-row">
         <div style="width:40px;text-align:right;color:var(--muted);margin-right:6px;">${(salesPct*100).toFixed(1)}%</div>
         <div class="bar-track">
@@ -1639,68 +1793,14 @@ const renderCPCDistribution = () => {
       </div>
     `;
 
-    return `
-      <tr>
-        <td>${b.label}</td>
-        <td>${barHtml}</td>
-        <td>${fmtMoney(m.spend)}</td>
-        <td>${fmtMoney(m.sales)}</td>
-        <td>${fmtInt(m.orders)}</td>
-        <td style="${m.roas >= 3 ? 'color:#1a7f37;font-weight:700' : ''}">${m.roas.toFixed(2)}</td>
-        <td style="${m.acos > 0.4 ? 'color:#b42318;' : ''}">${fmtPct(m.acos)}</td>
-        <td>${fmtPct(m.cvr)}</td>
-      </tr>
-    `;
-  }).join("");
-};
-
-/** =========================
- * CVR Efficiency Analysis
- * ========================= */
-const renderCVRDistribution = () => {
-  const tbody = $("cvrDistTable")?.querySelector("tbody");
-  if (!tbody) return;
-  if (!VIEW.length) { tbody.innerHTML = ""; return; }
-
-  const buckets = [
-      { label: "0% (无转化)", type: "zero", rows: [] },
-      { label: "0% - 5%", min:0, max:0.05, rows: [] },
-      { label: "5% - 10%", min:0.05, max:0.10, rows: [] },
-      { label: "10% - 20%", min:0.10, max:0.20, rows: [] },
-      { label: "> 20%", min:0.20, max:999, rows: [] }
-  ];
-
-  for (const r of VIEW) {
-      if (r.clicks <= 0) continue; 
-      const rowCvr = r.orders / r.clicks;
-      
-      if (r.orders === 0) {
-          buckets[0].rows.push(r);
-      } else {
-          for(let i=1; i<buckets.length; i++) {
-              const b = buckets[i];
-              if (rowCvr > b.min && rowCvr <= b.max) {
-                  b.rows.push(r);
-                  break;
-              }
-          }
-      }
-  }
-
-  const result = buckets.map(b => ({ ...b, metrics: sumMetrics(b.rows) }));
-  const totalSpend = sumMetrics(VIEW).spend || 1;
-
-  tbody.innerHTML = result.map(b => {
-    const m = b.metrics;
-    if (m.impr === 0 && m.spend === 0) return ""; 
-    
-    // FIX: divide by zero check
-    const spendPct = totalSpend > 0 ? (m.spend / totalSpend) : 0;
-    const barHtml = `
+    // Order Percentage (New Function: Transaction Bid Ratio)
+    const orderPct = totalOrders > 0 ? (m.orders / totalOrders) : 0;
+    // 使用不同颜色的 Bar 区分 (Green for orders)
+    const orderBarHtml = `
       <div class="bar-row">
-        <div style="width:40px;text-align:right;color:var(--muted);margin-right:6px;">${(spendPct*100).toFixed(1)}%</div>
+        <div style="width:40px;text-align:right;color:var(--muted);margin-right:6px;">${(orderPct*100).toFixed(1)}%</div>
         <div class="bar-track">
-           <div style="width:${spendPct*100}%;background:${b.type==='zero'?'#b42318':'var(--accent)'}"></div>
+           <div style="width:${orderPct*100}%;background:var(--good)"></div>
         </div>
       </div>
     `;
@@ -1708,13 +1808,14 @@ const renderCVRDistribution = () => {
     return `
       <tr>
         <td>${b.label}</td>
-        <td>${barHtml}</td>
+        <td>${salesBarHtml}</td>
+        <td>${orderBarHtml}</td>
         <td>${fmtMoney(m.spend)}</td>
         <td>${fmtMoney(m.sales)}</td>
         <td>${fmtInt(m.orders)}</td>
         <td style="${m.roas >= 3 ? 'color:#1a7f37;font-weight:700' : ''}">${m.roas.toFixed(2)}</td>
         <td style="${m.acos > 0.4 ? 'color:#b42318;' : ''}">${fmtPct(m.acos)}</td>
-        <td>${fmtMoney(m.cpc)}</td>
+        <td>${fmtPct(m.cvr)}</td>
       </tr>
     `;
   }).join("");
@@ -1771,54 +1872,6 @@ const renderLengthAnalysis = () => {
 };
 
 /** =========================
- * Pareto Analysis
- * ========================= */
-const renderParetoAnalysis = () => {
-    const box = $("paretoContent");
-    if (!VIEW.length) { box.innerHTML = ""; return; }
-
-    const total = sumMetrics(VIEW);
-    if(total.sales <= 0 && total.spend <= 0) { box.innerHTML = `<div class="small">数据不足以计算帕累托分布</div>`; return; }
-
-    const byTerm = [...groupBy(VIEW, r=>r.searchTerm).values()].map(rows => sumMetrics(rows));
-    byTerm.sort((a,b) => b.sales - a.sales);
-
-    let sumSales = 0, countSales80 = 0;
-    const targetSales = total.sales * 0.8;
-    for(const t of byTerm) {
-        sumSales += t.sales;
-        countSales80++;
-        if(sumSales >= targetSales) break;
-    }
-    const pctSalesTerms = byTerm.length > 0 ? (countSales80 / byTerm.length) * 100 : 0;
-
-    const wastedTerms = byTerm.filter(t => t.orders === 0);
-    const wastedSpend = wastedTerms.reduce((acc, t) => acc + t.spend, 0);
-    const wastedPct = total.spend > 0 ? (wastedSpend / total.spend) * 100 : 0;
-    const wastedCountPct = byTerm.length > 0 ? (wastedTerms.length / byTerm.length) * 100 : 0;
-
-    box.innerHTML = `
-        <div class="pareto-item">
-            <div class="pareto-left">
-                <div class="pareto-desc">贡献 80% 销售额的搜索词数量</div>
-                <div class="small" style="color:var(--accent)">只需 ${countSales80} 个词 (${pctSalesTerms.toFixed(1)}%)</div>
-            </div>
-            <div class="pareto-right">${countSales80}</div>
-        </div>
-        <div class="pareto-item">
-            <div class="pareto-left">
-                <div class="pareto-desc">0 订单(无效)花费占比</div>
-                <div class="small" style="color:#b42318">涉及 ${wastedTerms.length} 个词 (${wastedCountPct.toFixed(1)}%)</div>
-            </div>
-            <div class="pareto-right" style="color:#b42318">${wastedPct.toFixed(1)}%</div>
-        </div>
-        <div class="small" style="padding:0 4px;">
-            解读：如果销售额集中度极高（如 <5% 的词带来 80% 销售），说明账号风险较大（依赖爆款）；如果无效花费占比 >30%，说明否定词优化空间巨大。
-        </div>
-    `;
-};
-
-/** =========================
  * Match Type Analysis
  * ========================= */
 const renderMatchTypeAnalysis = () => {
@@ -1868,63 +1921,6 @@ const renderMatchTypeAnalysis = () => {
   }).join("");
 };
 
-/** =========================
- * Budget Health Analysis
- * ========================= */
-const renderBudgetHealth = () => {
-  const tbody = $("budgetHealthTable")?.querySelector("tbody");
-  if (!tbody) return;
-  if (!VIEW.length) { tbody.innerHTML = ""; return; }
-
-  const roasThreshold = safeNum($("ruleRoasNeg").value) || 1.5;
-  const buckets = {
-      waste: { label:"纯浪费 (0 Orders)", rows:[], note:"0 出单" },
-      poor: { label:`低效能 (ROAS < ${roasThreshold})`, rows:[], note:"有出单但亏损" },
-      good: { label:`高效能 (ROAS ≥ ${roasThreshold})`, rows:[], note:"盈利/健康" }
-  };
-
-  for (const r of VIEW) {
-      if(r.orders === 0) buckets.waste.rows.push(r);
-      else if(r.roas < roasThreshold) buckets.poor.rows.push(r);
-      else buckets.good.rows.push(r);
-  }
-
-  const result = Object.values(buckets).map(b => ({ ...b, ...sumMetrics(b.rows) }));
-  const totalSpend = sumMetrics(VIEW).spend || 1;
-
-  tbody.innerHTML = result.map(row => {
-    if(row.spend === 0 && row.impr === 0) return "";
-    const spendPct = totalSpend > 0 ? (row.spend / totalSpend) : 0;
-    
-    // Color coding
-    let color = "var(--accent)";
-    if(row.label.includes("纯浪费")) color = "#b42318"; // Red
-    else if(row.label.includes("低效能")) color = "#b54708"; // Orange
-    else color = "#1a7f37"; // Green
-
-    const barHtml = `
-      <div class="bar-row">
-        <div style="width:40px;text-align:right;color:var(--muted);margin-right:6px;">${(spendPct*100).toFixed(1)}%</div>
-        <div class="bar-track">
-           <div style="width:${spendPct*100}%;background:${color}"></div>
-        </div>
-      </div>
-    `;
-    return `
-      <tr>
-        <td style="font-weight:600;color:${color}">${row.label}</td>
-        <td>${barHtml}</td>
-        <td>${fmtMoney(row.spend)}</td>
-        <td>${fmtMoney(row.sales)}</td>
-        <td>${fmtInt(row.orders)}</td>
-        <td>${row.roas.toFixed(2)}</td>
-        <td>${fmtPct(row.acos)}</td>
-        <td style="color:var(--muted);font-size:11.5px;">${row.note}</td>
-      </tr>
-    `;
-  }).join("");
-};
-
 
 /** =========================
  * Auto / Manual Comparison
@@ -1933,7 +1929,11 @@ const renderAutoManual = () => {
   if (!VIEW.length) return;
   const tbody = $("autoManualTable")?.querySelector("tbody");
   if (!tbody) return;
-  const isManual = (t) => ["broad","phrase","exact"].includes((t||"").toLowerCase());
+  // [优化] 手动广告判定逻辑加强 (Broad, Phrase, Exact, Product, Targeting)
+  const isManual = (t) => {
+      const lower = (t||"").toLowerCase();
+      return ["broad","phrase","exact"].includes(lower) || lower.includes("product") || lower.includes("targeting");
+  };
   const autoRows = [], manualRows = [];
   for (const r of VIEW) {
     if (isManual(r.matchType)) manualRows.push(r);
@@ -1978,38 +1978,51 @@ const renderAutoManual = () => {
 };
 
 /** =========================
- * Conflict Analysis (NEW)
+ * Conflict Analysis (Optimized)
  * ========================= */
 const renderConflictAnalysis = () => {
   const tbody = $("conflictTable")?.querySelector("tbody");
   if (!tbody) return;
   if (!VIEW.length) { tbody.innerHTML = ""; return; }
 
+  // [优化] 使用 Map 聚合数据，而不是存储完整的 rows 数组，极大降低内存占用
   const map = new Map();
-  // Group by Search Term, record unique Locations
+  
   for (const r of VIEW) {
     if (!r.searchTerm || isASINLike(r.searchTerm)) continue; // Skip ASINs
-    if (!map.has(r.searchTerm)) map.set(r.searchTerm, { rows: [], locations: new Set() });
+    
+    // 初始化聚合对象
+    if (!map.has(r.searchTerm)) {
+        map.set(r.searchTerm, { 
+            locations: new Set(), 
+            spend: 0, 
+            orders: 0, 
+            sales: 0 
+        });
+    }
+    
     const entry = map.get(r.searchTerm);
-    entry.rows.push(r);
-    // Key for location: Campaign > AdGroup
     entry.locations.add(`${r.campaign} > ${r.adGroup}`);
+    // 累加指标
+    entry.spend += r.spend;
+    entry.orders += r.orders;
+    entry.sales += r.sales;
   }
 
   const conflicts = [];
   for (const [term, data] of map.entries()) {
     // Conflict definition: Appears in > 1 unique Ad Group location
-    if (data.locations.size > 1) {
-      const m = sumMetrics(data.rows);
-      // Only care if spend > some minimal amount to avoid noise
-      if (m.spend > 5) {
-        conflicts.push({
-          term,
-          count: data.locations.size,
-          locs: Array.from(data.locations),
-          ...m
-        });
-      }
+    // Only care if spend > some minimal amount to avoid noise
+    if (data.locations.size > 1 && data.spend > 5) {
+      conflicts.push({
+        term,
+        count: data.locations.size,
+        locs: Array.from(data.locations),
+        spend: data.spend,
+        orders: data.orders,
+        // 计算 ROAS
+        roas: data.spend > 0 ? data.sales / data.spend : 0
+      });
     }
   }
 
@@ -2017,8 +2030,8 @@ const renderConflictAnalysis = () => {
   conflicts.sort((a,b) => b.spend - a.spend);
 
   if (conflicts.length === 0) {
-     tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted)">未检测到明显的内部竞争（条件：不同广告组数 > 1 且 花费 > 5）</td></tr>`;
-     return;
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted)">未检测到明显的内部竞争（条件：不同广告组数 > 1 且 花费 > 5）</td></tr>`;
+      return;
   }
 
   tbody.innerHTML = conflicts.slice(0, 50).map(c => {
@@ -2137,7 +2150,8 @@ const exportNegativesCSV = () => {
     }
   }
   if (rows.length === 1) { log("未找到可导出的 NEGATE 项（请调低阈值或扩大日期范围）", "warn"); alert("未找到可导出的 NEGATE 项（请调低阈值或扩大日期范围）。"); return; }
-  const filename = `negatives_${rankBy}_${negMatch}_${$("dateStart").value || "start"}_${$("dateEnd").value || "end"}.csv`;
+  
+  const filename = `negatives_${rankBy}_${negMatch}_${$("dateStart").value || "start"}_${$("dateEnd").value || "end"}_${getTs()}.csv`;
   downloadText(filename, toCSV(rows));
   log(`已导出否定词 CSV：${filename}（${rows.length-1} 条）`, "good");
 };
@@ -2155,7 +2169,7 @@ const exportBidUpCSV = () => {
       (it.roas ?? 0).toFixed(2), ((it.acos ?? 0) * 100).toFixed(2) + "%"
     ]);
   }
-  const filename = `bidup_${$("dateStart").value || "start"}_${$("dateEnd").value || "end"}.csv`;
+  const filename = `bidup_${$("dateStart").value || "start"}_${$("dateEnd").value || "end"}_${getTs()}.csv`;
   downloadText(filename, toCSV(rows));
   log(`已导出加价词 CSV：${filename}（${rows.length-1} 条）`, "good");
 };
@@ -2172,21 +2186,21 @@ const exportRankCSV = () => {
     for (const r of RANK_ROWS) {
          rows.push([
             r.name,
-            r.spend.toFixed(2),
-            r.sales.toFixed(2),
+            (r.spend || 0).toFixed(2),
+            (r.sales || 0).toFixed(2),
             r.orders,
             r.impr,
             r.clicks,
-            (r.ctr * 100).toFixed(2) + "%",
-            r.cpc.toFixed(2),
-            (r.cvr * 100).toFixed(2) + "%",
-            (r.acos * 100).toFixed(2) + "%",
-            r.roas.toFixed(2),
+            ((r.ctr || 0) * 100).toFixed(2) + "%",
+            (r.cpc || 0).toFixed(2),
+            ((r.cvr || 0) * 100).toFixed(2) + "%",
+            ((r.acos || 0) * 100).toFixed(2) + "%",
+            (r.roas || 0).toFixed(2),
             r.action,
             r.reason
          ]);
     }
-    const filename = `rank_list_${$("dateStart").value || "start"}_${$("dateEnd").value || "end"}.csv`;
+    const filename = `rank_list_${$("dateStart").value || "start"}_${$("dateEnd").value || "end"}_${getTs()}.csv`;
     downloadText(filename, toCSV(rows));
     log(`已导出榜单 CSV：${filename}（${rows.length-1} 条）`, "good");
 };
@@ -2214,10 +2228,15 @@ const renderKPIs = (total) => {
   `).join("");
 };
 
+// [优化] 图表网格线自适应深色模式 + 稳健的 Context 获取
 const renderTrend = (rows) => {
   const byDate = groupBy(rows, r=>r.date);
   const series = [...byDate.keys()].sort().map(d=>({ date:d, ...sumMetrics(byDate.get(d)) }));
   const dataMap = (key, transform = v => v) => series.map(s => transform(s[key]));
+  
+  // 获取当前主题对应的网格线颜色
+  const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--chart-grid').trim() || "rgba(229,229,234,.6)";
+
   const datasets = [
     { label:"花费", data:dataMap("spend"), tension:.25, pointRadius:0, borderWidth:2 },
     { label:"销售额", data:dataMap("sales"), tension:.25, pointRadius:0, borderWidth:2 },
@@ -2225,18 +2244,29 @@ const renderTrend = (rows) => {
     { label:"ACOS %", data:dataMap("acos", v => isFinite(v) ? v*100 : 0), tension:.25, pointRadius:0, borderWidth:2, yAxisID:"y1" },
     { label:"ROAS", data:dataMap("roas", v => isFinite(v) ? v : 0), tension:.25, pointRadius:0, borderWidth:2, yAxisID:"y1" },
   ];
-  if (trendChart) trendChart.destroy();
-  trendChart = new Chart($("trendChart"), {
-    type:"line", data:{ labels:series.map(s=>s.date), datasets },
-    options:{
-      responsive:true, maintainAspectRatio:false, interaction:{ mode:"index", intersect:false },
-      scales:{
-        y:{ beginAtZero:true, grid:{ color:"rgba(229,229,234,.6)" } },
-        y1:{ beginAtZero:true, position:"right", grid:{ drawOnChartArea:false } },
-        x:{ grid:{ display:false } }
-      }
-    }
-  });
+  
+  // [安全] 销毁前检查 context 防止内存泄漏或 Canvas 占用错误
+  if (trendChart) {
+      trendChart.destroy();
+      trendChart = null;
+  }
+  
+  const canvas = $("trendChart");
+  if (canvas) {
+      const ctx = canvas.getContext("2d");
+      trendChart = new Chart(ctx, {
+        type:"line", 
+        data:{ labels:series.map(s=>s.date), datasets },
+        options:{
+          responsive:true, maintainAspectRatio:false, interaction:{ mode:"index", intersect:false },
+          scales:{
+            y:{ beginAtZero:true, grid:{ color: gridColor } },
+            y1:{ beginAtZero:true, position:"right", grid:{ drawOnChartArea:false } },
+            x:{ grid:{ display:false } }
+          }
+        }
+      });
+  }
 };
 
 const getRankKey = () => {
@@ -2256,7 +2286,11 @@ const sortRank = (items) => {
   items.sort((a,b)=>{
     const av = key==="name"||key==="action" ? String(a[key]||"") : (a[key] ?? 0);
     const bv = key==="name"||key==="action" ? String(b[key]||"") : (b[key] ?? 0);
-    return (typeof av === "string" ? av.localeCompare(bv) : (av > bv ? 1 : -1)) * mul;
+    // [修复] 强制类型安全比较，防止 mixed types 崩溃
+    if (typeof av === "string" && typeof bv === "string") {
+        return av.localeCompare(bv) * mul;
+    }
+    return (av > bv ? 1 : -1) * mul;
   });
 };
 
@@ -2274,9 +2308,13 @@ const buildRankTable = (rows) => {
 
 const renderRankTable = () => {
   buildRankTable(VIEW);
+  
+  // [新增] 搜索按钮 HTML
+  const searchBtnHtml = `<span class="action-icon search-btn" title="精准搜索">🔍</span>`;
+  
   $("rankTable").querySelector("tbody").innerHTML = RANK_ROWS.map(it => `
     <tr>
-      <td title="${escapeHtml(it.name)}">${escapeHtml(it.name).slice(0, 160)}</td>
+      <td title="${escapeHtml(it.name)}" data-name="${escapeHtml(it.name)}">${escapeHtml(it.name).slice(0, 160)}${searchBtnHtml}</td>
       <td>${fmtMoney(it.spend)}</td>
       <td>${fmtMoney(it.sales)}</td>
       <td>${fmtInt(it.orders)}</td>
@@ -2349,13 +2387,10 @@ const applyFilters = (initial=false) => {
     renderLongTailMining();
     renderWeekdayAnalysis();
     renderCPCDistribution();
-    renderCVRDistribution();
     renderLengthAnalysis();
-    renderParetoAnalysis();
     
     // NEW Features
     renderMatchTypeAnalysis();
-    renderBudgetHealth();
     renderConflictAnalysis();
     return;
   }
@@ -2365,19 +2400,44 @@ const applyFilters = (initial=false) => {
     filterSource: $("filterSource").value, filterPortfolio: $("filterPortfolio").value,
     filterCampaign: $("filterCampaign").value, filterAdGroup: $("filterAdGroup").value,
     filterTargeting: $("filterTargeting").value, filterMatchType: $("filterMatchType").value,
-    filterSearchTerm: $("filterSearchTerm").value.trim()
+    filterAdType: $("filterAdType").value, 
+    filterSearchTerm: $("filterSearchTerm").value.trim(),
+    filterSearchExact: $("filterSearchExact").checked 
   };
 
-  VIEW = ALL.filter(r =>
-    withinDate(r, filters.dateStart, filters.dateEnd) &&
-    (!filters.filterSource || r.sourceFile === filters.filterSource) &&
-    (!filters.filterPortfolio || r.portfolio === filters.filterPortfolio) &&
-    (!filters.filterCampaign || r.campaign === filters.filterCampaign) &&
-    (!filters.filterAdGroup || r.adGroup === filters.filterAdGroup) &&
-    (!filters.filterTargeting || r.targeting === filters.filterTargeting) &&
-    (!filters.filterMatchType || r.matchType === filters.filterMatchType) &&
-    includesSearch(r, filters.filterSearchTerm)
-  );
+  VIEW = ALL.filter(r => {
+    // 基础筛选
+    if (!withinDate(r, filters.dateStart, filters.dateEnd)) return false;
+    if (filters.filterSource && r.sourceFile !== filters.filterSource) return false;
+    if (filters.filterPortfolio && r.portfolio !== filters.filterPortfolio) return false;
+    if (filters.filterCampaign && r.campaign !== filters.filterCampaign) return false;
+    if (filters.filterAdGroup && r.adGroup !== filters.filterAdGroup) return false;
+    if (filters.filterTargeting && r.targeting !== filters.filterTargeting) return false;
+    if (filters.filterMatchType && r.matchType !== filters.filterMatchType) return false;
+
+    // [优化] 广告类型筛选
+    if (filters.filterAdType) {
+        // 判断是否为手动广告 (Broad, Phrase, Exact, Product, Targeting)
+        // 涵盖了常见的 Keyword Targeting 和 Product Targeting (PAT) 场景
+        const lowerMatch = (r.matchType || "").toLowerCase();
+        const isManual = ["broad", "phrase", "exact"].includes(lowerMatch) || lowerMatch.includes("product") || lowerMatch.includes("targeting");
+        
+        if (filters.filterAdType === "manual" && !isManual) return false;
+        if (filters.filterAdType === "auto" && isManual) return false;
+    }
+
+    // [优化] 使用预计算的 Lowercase Search Term 进行筛选，大幅提升速度
+    if (filters.filterSearchTerm) {
+        const term = filters.filterSearchTerm.toLowerCase();
+        if (filters.filterSearchExact) {
+            if (r.searchTermLower !== term) return false;
+        } else {
+            if (!r.searchTermLower.includes(term)) return false;
+        }
+    }
+
+    return true;
+  });
 
   const total = sumMetrics(VIEW);
   setSubtitle(`已导入 ${importedFiles.length} 个文件；ALL=${ALL.length.toLocaleString()} 行；当前视图=${VIEW.length.toLocaleString()} 行；日期范围 ${filters.dateStart} → ${filters.dateEnd}`);
@@ -2390,15 +2450,11 @@ const applyFilters = (initial=false) => {
   renderLongTailMining(); 
   renderWeekdayAnalysis(); 
   renderCPCDistribution(); 
-  renderCVRDistribution(); 
   renderAutoManual();
   renderLengthAnalysis();
-  renderParetoAnalysis();
   
-  // NEW: Call new render functions
   renderMatchTypeAnalysis();
-  renderBudgetHealth();
-  renderConflictAnalysis(); // The new checker
+  renderConflictAnalysis(); 
 
   if (initial) {
     document.querySelectorAll(".chipBtn").forEach(b => b.classList.remove("active"));
@@ -2408,22 +2464,31 @@ const applyFilters = (initial=false) => {
 const autoApply = debounce(applyFilters, 200);
 
 /** =========================
- * Quick Range
+ * Quick Range (FIXED)
  * ========================= */
 const applyQuickRange = (type) => {
   if (!ALL.length) return;
   const dates = ALL.map(r=>r.date).filter(Boolean).sort();
   const [minD, maxD] = [dates[0], dates[dates.length-1]];
+
+  // [修复] 单独处理 "all" 并直接返回，防止被后续逻辑覆盖
+  if (type === "all") {
+     $("dateStart").value = minD;
+     $("dateEnd").value = maxD;
+     return;
+  }
+
   const max = new Date(maxD);
   let start = new Date(max);
   const rangeMap = {
     yesterday: () => start.setDate(start.getDate()-1),
     "7d": () => start.setDate(start.getDate()-6),
     "30d": () => start.setDate(start.getDate()-29),
-    mtd: () => start.setDate(1),
-    "all": () => { $("dateStart").value = minD; $("dateEnd").value = maxD; return; }
+    "mtd": () => start.setDate(1)
   };
-  rangeMap[type]();
+  
+  if(rangeMap[type]) rangeMap[type]();
+
   const isoStart = toISODate(start);
   $("dateStart").value = isoStart < minD ? minD : isoStart;
   $("dateEnd").value = maxD;
@@ -2442,13 +2507,24 @@ const filterIds = [
   "rankBy","rankTopN","ruleSpendNeg","ruleClicksNeg","ruleRoasNeg","ruleRoasKeep","ruleOrdersKeep","ruleRoasMigrateMin",
   "exportScope","exportNegMatch","bidSpend","bidOrders","bidRoas","bidIntensity",
   "wfMinFreq","wfMinSpend",
-  "ltMinWords","ltMinOrders","ltMinRoas"
+  "ltMinWords","ltMinOrders","ltMinRoas",
+  "filterSearchExact",
+  "filterAdType" 
 ];
 filterIds.forEach(id => $(id)?.addEventListener("change", autoApply));
 $("filterSearchTerm").addEventListener("input", debounce(applyFilters, 280));
 
+// [新增] 清除搜索词按钮事件
+$("btnClearSearch").addEventListener("click", () => {
+  $("filterSearchTerm").value = "";
+  $("filterSearchExact").checked = false; // 可选：清除时取消精准搜索
+  $("filterSearchTerm").focus(); // [新增] 聚焦回输入框
+  applyFilters();
+  log("已清空搜索词", "info");
+});
+
 $("btnReset").addEventListener("click", () => {
-  ["filterSource","filterPortfolio","filterCampaign","filterAdGroup","filterTargeting","filterMatchType","filterSearchTerm"].forEach(id => ($(id).value = ""));
+  ["filterSource","filterPortfolio","filterCampaign","filterAdGroup","filterTargeting","filterMatchType","filterSearchTerm", "filterAdType"].forEach(id => ($(id).value = ""));
   $("rankBy").value = "searchTerm"; rankSort = { key:"spend", dir:"desc" };
   rankTypeFilter = "all"; document.querySelectorAll('.seg[aria-label="Type Filter"] .segBtn').forEach(b=>b.classList.toggle("active", b.dataset.type === "all"));
   actionTypeFilter = "all"; document.querySelectorAll('.seg[aria-label="Action Type Filter"] .segBtn').forEach(b=>b.classList.toggle("active", b.dataset.act === "all"));
@@ -2458,6 +2534,8 @@ $("btnReset").addEventListener("click", () => {
   wfSort = { key: "spend", dir: "desc" };
   // Reset Long Tail
   $("ltMinWords").value = 3; $("ltMinOrders").value = 2; $("ltMinRoas").value = 2.0;
+  // Reset Checkbox
+  $("filterSearchExact").checked = false;
 
   populateDropdowns(); applyFilters(); log("已重置筛选", "good");
 });
@@ -2478,6 +2556,24 @@ $("rankTable").querySelectorAll("thead th").forEach(th => th.addEventListener("c
   rankSort = (rankSort.key === key) ? {key, dir: (rankSort.dir === "desc" ? "asc" : "desc")} : {key, dir:"desc"};
   renderRankTable(); renderActionLists(); renderWordFreq();
 }));
+
+// [新增] 榜单中点击放大镜的委托事件
+$("rankTable").addEventListener("click", (e) => {
+    // 检查是否点击了 search-btn
+    if (e.target.classList.contains("search-btn")) {
+        const td = e.target.closest("td");
+        const term = td.getAttribute("data-name"); // 使用 dataset 获取原始词（无 HTML）
+        if (term) {
+            $("filterSearchTerm").value = term;
+            $("filterSearchExact").checked = true; // 自动勾选精准搜索
+            applyFilters();
+            // 滚动到顶部方便看筛选栏
+            $(".sidebar").scrollTop = 0;
+            log(`已精准搜索：${term}`, "good");
+        }
+    }
+});
+
 
 $("wfTable").querySelectorAll("thead th").forEach(th => th.addEventListener("click", () => {
   const key = th.dataset.sort;
@@ -2534,64 +2630,20 @@ $("btnCheck").addEventListener("click", () => {
   else alert("依赖库缺失，请检查网络或控制台日志。");
 });
 
-/** =========================
- * Demo
- * ========================= */
-$("btnDemo").addEventListener("click", () => {
-  clearLog(); libsCheck();
-  const mkDemoData = (file, offset) => {
-    const base = new Date(), terms = [
-      "blue light reading glasses 2.0", "2.0 magnification readers for women", "cat eye readers 1.5",
-      "spring hinge reading glasses 2.5", "progressive readers", "anti glare computer glasses 2.0",
-      "reading glasses men 2.5", "women cat-eye blue light readers 2.0", "cheap readers 3.0", "b07ybhgt31"
-    ];
-    // FORCE CONFLICT DATA: Ensure "blue light reading glasses 2.0" appears in multiple different groups
-    const asins = ["B07YBHGT31","B0ABCDE1234","B0ZZZZZ9999","B0QWERTY123"];
-    return Array.from({length:30}).map((_,i) => {
-      const d = new Date(base); 
-      d.setDate(d.getDate() - (13-i) - offset);
-      
-      let st = terms[Math.floor(Math.random()*terms.length)];
-      // Inject deliberate conflict
-      if(i % 5 === 0) st = "blue light reading glasses 2.0"; 
+// ========================
+// Dark Mode Logic (Optimized)
+// ========================
+const toggleTheme = () => {
+  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+  const newTheme = isDark ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", newTheme);
+  localStorage.setItem("theme", newTheme);
+  
+  // [优化] 切换主题时，重绘图表以适配网格线颜色
+  if (trendChart && VIEW.length) renderTrend(VIEW);
+};
 
-      const spend = Math.random()*80 + 10, clicks = Math.round(Math.random()*120);
-      const impr = clicks* (Math.round(Math.random()*30)+10);
-      const orders = Math.random()<0.35 ? 0 : Math.round(Math.random()*4);
-      const sales = orders * (Math.random()*40 + 18);
-      
-      const targeting = Math.random()<0.5 ? "keyword" : `asin=${asins[Math.floor(Math.random()*asins.length)]}`;
-      
-      // Randomize Campaign/AdGroup to create conflicts
-      const campaign = Math.random()<0.5 ? "Campaign Manual" : (Math.random()<0.5?"Campaign Auto":"Campaign Seasonal");
-      const adGroup = Math.random()<0.5 ? "AdGroup Core" : "AdGroup Test";
-
-      return {
-        sourceFile:file, date:toISODate(d),
-        portfolio:"Portfolio A",
-        campaign,
-        adGroup,
-        targeting, matchType:(Math.random()<0.4?"broad":(Math.random()<0.6?"phrase":"exact")),
-        searchTerm:st, searchTermRoot:searchTermToRoot(st),
-        impr, clicks, spend, sales, orders,
-        ctr:impr>0?clicks/impr:0, cpc:clicks>0?spend/clicks:0, cvr:clicks>0?orders/clicks:0,
-        acos:sales>0?spend/sales:0, roas:spend>0?sales/spend:0,
-      };
-    });
-  };
-
-  if ($("mergeMode").value === "replace") { ALL = []; importedFiles = []; rootCache.clear(); }
-  const a = mkDemoData("demo_A.xlsx", 0), b = mkDemoData("demo_B.xlsx", 10);
-  ALL = ALL.concat(a,b);
-  importedFiles.push({name:"demo_A.xlsx", rows:a.length}, {name:"demo_B.xlsx", rows:b.length});
-
-  if ($("dedupeMode").value === "on") { const before = ALL.length; ALL = dedupeRows(ALL); log(`演示数据去重：${before} → ${ALL.length}`, "good"); }
-  renderFileList(); populateDropdowns();
-  const dates = ALL.map(r=>r.date).sort();
-  $("dateStart").value = dates[0]; $("dateEnd").value = dates[dates.length-1];
-  applyFilters(true);
-  log("已载入演示数据（含冲突检测演示）", "good");
-});
+$("btnTheme").addEventListener("click", toggleTheme);
 
 /** =========================
  * Boot
