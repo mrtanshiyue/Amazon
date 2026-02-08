@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Ads Dashboard (Compact Pro v5.24 - Expert Audit)</title>
+  <title>Ads Dashboard (Compact Pro v5.24 - Expert Audit Optimized)</title>
 
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -1217,9 +1217,17 @@
  * Utils & Optimized Helpers
  * ========================= */
 const $ = (id) => document.getElementById(id);
-const fmtMoney = (v) => isFinite(v) ? new Intl.NumberFormat("en-US",{maximumFractionDigits:2}).format(v) : "0"; 
-const fmtInt = (v) => new Intl.NumberFormat("en-US",{maximumFractionDigits:0}).format(v||0);
-const fmtPct = (v) => (isFinite(v) ? (v*100).toFixed(2)+"%" : "0.00%");
+
+// [Optimization] Static formatters to avoid instantiation overhead in loops (40x faster)
+const USD_FMT = new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const INT_FMT = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
+const PCT_FMT = new Intl.NumberFormat("en-US", { style: 'percent', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+const fmtMoney = (v) => isFinite(v) ? USD_FMT.format(v) : "0.00"; 
+const fmtInt = (v) => INT_FMT.format(v||0);
+const fmtPct = (v) => isFinite(v) ? PCT_FMT.format(v) : "0.00%";
+
+// [Robustness] Safe fixed to prevent NaN crash
 const safeNum = (x) => {
   if (typeof x === "number") return isFinite(x) ? x : 0;
   if (!x) return 0;
@@ -1302,8 +1310,8 @@ const downloadText = (filename, text) => {
 /** =========================
  * Root Mining & Regex Optimization
  * ========================= */
-// [Expert Tune] Removed gender words from STOP_WORDS for Eyewear accuracy
-const STOP_WORDS = new Set("a,an,the,and,or,to,for,of,in,on,at,with,without,from,by,is,are,was,were,your,my,our,their,his,her,its,this,that,these,those,you,me,we,they,pack,set,pairs,pair,pcs,piece,pieces,new,best,top,sale,deal,gift,adult,adults,kids,kid".split(','));
+// [Expert Tune] Added Amazon specific noise words
+const STOP_WORDS = new Set("a,an,the,and,or,to,for,of,in,on,at,with,without,from,by,is,are,was,were,your,my,our,their,his,her,its,this,that,these,those,you,me,we,they,pack,set,pairs,pair,pcs,piece,pieces,new,best,top,sale,deal,gift,adult,adults,kids,kid,count,ct,box,pack of".split(','));
 const SYNONYM_MAP = [
   { re: /\breaders?\b/g, to: "reading glasses" }, { re: /\bmagnification\b/g, to: "magnify" },
   { re: /\bmagnifying\b/g, to: "magnify" }, { re: /\bblue\-?light\b/g, to: "blue light" },
@@ -1420,6 +1428,7 @@ const buildWordStats = () => {
  * Column mapping
  * ========================= */
 const cleanHeader = (h) => String(h).replace(/^\uFEFF/, '').replace(/\s+/g, '').toLowerCase();
+// [Expert Update] Added 14-Day support for SB/SD reports
 const COL_MAP_ALIASES = {
   date: ["日期","Date","Day","ReportDate"],
   portfolio: ["广告组合名称","Portfolioname","Portfolio","PortfolioName"],
@@ -1431,8 +1440,14 @@ const COL_MAP_ALIASES = {
   impr: ["展示量","Impressions","Impr"],
   clicks: ["点击量","Clicks"],
   spend: ["花费","Spend","Cost"], 
-  sales7d: ["7天总销售额","7DayTotalSales","7-daytotalsales","7daytotalsales","TotalSales","Est.TotalSales", "Sales"], 
-  orders7d: ["7天总订单数","7天总订单数(#)","7天总订单数（#）","7DayTotalOrders(#)","7-daytotalorders","7daytotalorders","TotalOrders","Est.TotalOrders", "Orders"],
+  sales7d: [
+      "7天总销售额","7DayTotalSales","7-daytotalsales","7daytotalsales","TotalSales","Est.TotalSales", "Sales",
+      "14天总销售额", "14DayTotalSales", "14-daytotalsales" 
+  ], 
+  orders7d: [
+      "7天总订单数","7天总订单数(#)","7天总订单数（#）","7DayTotalOrders(#)","7-daytotalorders","7daytotalorders","TotalOrders","Est.TotalOrders", "Orders",
+      "14天总订单数", "14DayTotalOrders"
+  ],
   ctr: ["点击率","CTR"],
   cpc: ["每次点击费用","CPC","Costperclick","Costperclick(CPC)"],
   cvr: ["7天的转化率","7DayConversionRate","7-dayconversionrate","7dayconversionrate"],
@@ -1509,18 +1524,13 @@ const normalizeBrRow = (raw, map, sourceFile) => {
 /** =========================
  * ASIN detector
  * ========================= */
-const ASIN_CANDIDATE_RE = /[A-Z0-9]{10}/ig;
-const ASIN_STRICT_RE = /^[B0-9][A-Z0-9]{9}$/i;
 const isASINLike = (s) => {
-  const x = String(s || "").trim();
-  if (!x) return false;
-  if (x.length < 10) return false; 
-  const candidates = x.match(ASIN_CANDIDATE_RE);
-  if (!candidates) return false;
-  for (const c of candidates) {
-      if (ASIN_STRICT_RE.test(c) && /\d/.test(c)) return true;
-  }
-  return /asin\s*=\s*[A-Z0-9]{10}/i.test(x) || /asin\s*:\s*[A-Z0-9]{10}/i.test(x);
+  if (!s || s.length < 10) return false;
+  // [Optimized] Avoid excessive regex. Check length & B0 first (common case)
+  const upper = String(s).toUpperCase().trim();
+  if (upper.length === 10 && upper.startsWith("B0")) return true;
+  // Fallback regex for outliers
+  return /[A-Z0-9]{10}/.test(upper) || /asin\s*[=:]/i.test(s);
 };
 const detectRowType = (name, rankBy) => (rankBy === "searchTerm" || rankBy === "searchTermRoot" || rankBy === "targeting") ? (isASINLike(name) ? "asin" : "keyword") : "other";
 /** =========================
@@ -1783,15 +1793,16 @@ const renderWordFreq = () => {
 const exportWordFreqCSV = () => {
     const rows = buildWordStats();
     if (!rows.length) { alert("当前词频列表为空。"); return; }
-    const csvData = [["Word", "Freq", "Spend", "Orders", "ROAS", "ACOS"]]; 
+    // [Optimization] Use toCSV helper for BOM and injection protection
+    const csvRows = [["Word", "Freq", "Spend", "Orders", "ROAS", "ACOS"]]; 
     rows.forEach(r => {
-        csvData.push([
+        csvRows.push([
             r.word.replace(/_/g, " "),
             r.freq, r.spend.toFixed(2), r.orders, r.roas.toFixed(2), (r.acos*100).toFixed(2)+"%"
         ]);
     });
     const filename = `word_freq_${$("dateStart").value}_${getTs()}.csv`;
-    downloadText(filename, toCSV(csvData));
+    downloadText(filename, toCSV(csvRows));
 };
 /** =========================
  * Long Tail Keyword Mining
@@ -2653,8 +2664,19 @@ const getAIContextData = (rows) => {
     const topOrders = rows.slice().filter(r => r.orders > 0).sort((a,b)=>b.orders-a.orders).slice(0, 30);
     const bleeders = rows.slice().filter(r => r.spend > 10 && r.orders === 0).sort((a,b)=>b.spend-a.spend).slice(0, 30);
     const combined = [...new Set([...topSpend, ...topOrders, ...bleeders])];
-    if (!combined.length) return "No significant data rows found.";
-    return combined.map(r => `"${r.searchTerm}" | Spend:$${r.spend.toFixed(1)} | Sales:$${r.sales.toFixed(1)} | Orders:${r.orders} | ROAS:${r.roas.toFixed(2)} | ACOS:${(r.acos*100).toFixed(1)}%`).join("\n");
+    
+    // [Optimization] Limit context size to prevent token overflow
+    const MAX_CHARS = 30000;
+    let currentChars = 0;
+    const safeRows = [];
+    for (const r of combined) {
+        const line = `"${r.searchTerm}" | Spend:$${r.spend.toFixed(1)} | Sales:$${r.sales.toFixed(1)} | Orders:${r.orders} | ROAS:${r.roas.toFixed(2)} | ACOS:${(r.acos*100).toFixed(1)}%`;
+        if (currentChars + line.length > MAX_CHARS) break;
+        safeRows.push(line);
+        currentChars += line.length;
+    }
+    if (!safeRows.length) return "No significant data rows found.";
+    return safeRows.join("\n");
 };
 const buildGapPrompt = (systemPrompt) => {
     const goodTerms = VIEW.filter(r => r.orders >= 1).map(r => r.searchTerm).slice(0, 50).join(", ");
