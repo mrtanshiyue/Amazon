@@ -1,0 +1,77 @@
+name: Deploy Cloudflare Keyword Manager
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "cloudflare/**"
+      - ".github/workflows/cloudflare-deploy.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-keyword-manager
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cloudflare
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      DB_NAME: amazon-keyword-manager-db
+      R2_BUCKET: amazon-keyword-manager-images
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Verify Cloudflare credentials
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN" || (echo "Missing CLOUDFLARE_API_TOKEN" && exit 1)
+          test -n "$CLOUDFLARE_ACCOUNT_ID" || (echo "Missing CLOUDFLARE_ACCOUNT_ID" && exit 1)
+
+      - name: Install Wrangler
+        run: npm install
+
+      - name: Ensure D1 database
+        id: d1
+        shell: bash
+        run: |
+          DB_ID="$(npx wrangler d1 list --json | node -e '
+            let s=""; process.stdin.on("data",d=>s+=d); process.stdin.on("end",()=>{
+              const rows=JSON.parse(s); const hit=rows.find(x=>x.name===process.env.DB_NAME);
+              if(hit) process.stdout.write(hit.uuid || hit.id || "");
+            });')"
+          if [ -z "$DB_ID" ]; then
+            npx wrangler d1 create "$DB_NAME"
+            DB_ID="$(npx wrangler d1 list --json | node -e '
+              let s=""; process.stdin.on("data",d=>s+=d); process.stdin.on("end",()=>{
+                const rows=JSON.parse(s); const hit=rows.find(x=>x.name===process.env.DB_NAME);
+                if(hit) process.stdout.write(hit.uuid || hit.id || "");
+              });')"
+          fi
+          test -n "$DB_ID" || (echo "Unable to resolve D1 database id" && exit 1)
+          echo "database_id=$DB_ID" >> "$GITHUB_OUTPUT"
+          node scripts/render-config.mjs "$DB_ID"
+
+      - name: Ensure private R2 bucket
+        shell: bash
+        run: |
+          if ! npx wrangler r2 bucket info "$R2_BUCKET" --json >/dev/null 2>&1; then
+            npx wrangler r2 bucket create "$R2_BUCKET"
+          fi
+
+      - name: Apply D1 migrations
+        run: npx wrangler d1 migrations apply "$DB_NAME" --remote --config wrangler.deploy.jsonc
+
+      - name: Deploy Worker and static assets
+        run: npx wrangler deploy --config wrangler.deploy.jsonc
