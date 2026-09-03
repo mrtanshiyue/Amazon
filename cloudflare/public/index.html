@@ -1,0 +1,911 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Amazon Keyword Manager</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg:#f5f5f7;
+      --card:#fff;
+      --text:#1d1d1f;
+      --muted:#6e6e73;
+      --line:#e5e5ea;
+      --accent:#0071e3;
+      --accent-soft:#eaf4ff;
+      --danger:#c9342f;
+      --danger-soft:#fff0ef;
+      --good:#18864b;
+      --input:#fff;
+      --shadow:0 12px 34px rgba(0,0,0,.07);
+      --radius:18px;
+    }
+    [data-theme="dark"] {
+      color-scheme: dark;
+      --bg:#141415;
+      --card:#222224;
+      --text:#f5f5f7;
+      --muted:#a1a1a6;
+      --line:#39393b;
+      --accent:#2997ff;
+      --accent-soft:#132b42;
+      --danger:#ff6961;
+      --danger-soft:#3c2020;
+      --good:#32d06f;
+      --input:#1c1c1e;
+      --shadow:0 12px 34px rgba(0,0,0,.28);
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,"PingFang SC","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased}
+    body{font-size:14px}
+    button,input,select{font:inherit}
+    button{color:inherit}
+    .app{max-width:1500px;margin:0 auto;padding:18px;display:grid;grid-template-columns:320px minmax(0,1fr);gap:18px;min-height:100vh}
+    .sidebar,.panel,.topbar{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+    .sidebar{position:sticky;top:18px;height:calc(100vh - 36px);display:flex;flex-direction:column;overflow:hidden}
+    .brand{padding:18px 18px 14px;border-bottom:1px solid var(--line)}
+    .brand h1{font-size:19px;margin:0 0 5px;letter-spacing:-.3px}
+    .brand p{margin:0;color:var(--muted);font-size:12px;line-height:1.45}
+    .side-tools{padding:12px;border-bottom:1px solid var(--line);display:grid;gap:9px}
+    .store-tools{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px;align-items:center}
+    .store-tools select{min-width:0}
+    .store-actions{display:flex;gap:5px}
+    .store-actions .btn{padding:0 9px}
+    .search-wrap{position:relative}
+    .search-wrap input{padding-left:34px}
+    .search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+    input[type="text"],input[type="number"],input[type="search"],select{width:100%;height:38px;border:1px solid var(--line);background:var(--input);color:var(--text);border-radius:10px;padding:0 11px;outline:none;transition:.18s border-color,.18s box-shadow}
+    input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 14%,transparent)}
+    .product-list{padding:10px;overflow:auto;display:flex;flex-direction:column;gap:8px;flex:1}
+    .product-item{width:100%;border:1px solid transparent;background:transparent;border-radius:14px;padding:9px;text-align:left;cursor:pointer;display:grid;grid-template-columns:48px minmax(0,1fr);gap:10px;align-items:center}
+    .product-item:hover{background:color-mix(in srgb,var(--line) 28%,transparent)}
+    .product-item.active{background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 28%,transparent)}
+    .thumb{width:48px;height:48px;border-radius:11px;border:1px solid var(--line);background:var(--bg);object-fit:cover;display:block}
+    .thumb.placeholder{display:grid;place-items:center;color:var(--muted);font-size:18px}
+    .product-meta{min-width:0}
+    .product-sku{font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .product-asin{margin-top:3px;color:var(--muted);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .product-counts{margin-top:5px;color:var(--muted);font-size:11px}
+    .side-footer{padding:12px;border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .main{display:flex;flex-direction:column;gap:14px;min-width:0}
+    .topbar{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .title h2{font-size:20px;margin:0 0 4px;letter-spacing:-.3px}
+    .title div{color:var(--muted);font-size:12px}
+    .top-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .btn{border:1px solid var(--line);background:var(--card);border-radius:999px;min-height:36px;padding:0 14px;font-weight:650;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:.18s transform,.18s background,.18s border-color}
+    .btn:hover{background:color-mix(in srgb,var(--line) 25%,var(--card));border-color:color-mix(in srgb,var(--muted) 45%,var(--line))}
+    .btn:active{transform:scale(.98)}
+    .btn.primary{background:var(--accent);color:white;border-color:var(--accent)}
+    .btn.primary:hover{background:color-mix(in srgb,var(--accent) 88%,black)}
+    .btn.danger{color:var(--danger);background:var(--danger-soft);border-color:color-mix(in srgb,var(--danger) 25%,var(--line))}
+    .btn.small{min-height:30px;padding:0 10px;font-size:12px}
+    .btn.icon{width:32px;height:32px;min-height:32px;padding:0;border-radius:50%}
+    .panel{padding:16px}
+    .panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+    .panel-title{font-size:15px;font-weight:800}
+    .panel-sub{font-size:11.5px;color:var(--muted);margin-top:3px}
+    .product-editor{display:grid;grid-template-columns:150px minmax(0,1fr);gap:16px;align-items:start}
+    .image-box{width:150px;aspect-ratio:1;border:1px dashed color-mix(in srgb,var(--muted) 55%,var(--line));border-radius:16px;background:var(--bg);overflow:hidden;display:grid;place-items:center;position:relative}
+    .image-box img{width:100%;height:100%;object-fit:cover}
+    .image-empty{padding:14px;text-align:center;color:var(--muted);font-size:12px;line-height:1.5}
+    .image-actions{display:flex;gap:7px;margin-top:8px}
+    .fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .field label{display:block;font-size:11.5px;color:var(--muted);margin:0 0 6px 2px;font-weight:650}
+    .field .hint{font-size:10.5px;color:var(--muted);margin-top:5px}
+    .stats{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    .stat{background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:11.5px;color:var(--muted)}
+    .stat b{color:var(--text)}
+    .table-wrap{width:100%;overflow:auto;border:1px solid var(--line);border-radius:14px}
+    table{width:100%;border-collapse:separate;border-spacing:0;min-width:760px}
+    th,td{border-bottom:1px solid var(--line);padding:9px 8px;vertical-align:middle}
+    th{position:sticky;top:0;background:var(--card);z-index:1;text-align:left;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.25px;white-space:nowrap}
+    tr:last-child td{border-bottom:0}
+    td.term{min-width:250px}
+    td.bid{width:126px}
+    td.action{width:44px;text-align:center}
+    .bid-input{display:flex;align-items:center;border:1px solid var(--line);border-radius:10px;background:var(--input);overflow:hidden;height:36px}
+    .bid-input span{padding-left:10px;color:var(--muted);font-size:12px}
+    .bid-input input{height:34px;border:0;border-radius:0;padding-left:4px;box-shadow:none;min-width:0}
+    .check-cell{width:100px;text-align:center}
+    .check{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px}
+    .check input{width:18px;height:18px;accent-color:var(--accent);cursor:pointer}
+    .empty{padding:30px 14px;text-align:center;color:var(--muted);font-size:12.5px}
+    .empty strong{display:block;color:var(--text);font-size:14px;margin-bottom:5px}
+    .notice{border:1px solid color-mix(in srgb,var(--accent) 25%,var(--line));background:var(--accent-soft);border-radius:12px;padding:10px 12px;font-size:11.5px;line-height:1.5;color:color-mix(in srgb,var(--text) 88%,var(--muted))}
+    .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,16px);background:color-mix(in srgb,var(--text) 92%,transparent);color:var(--card);padding:9px 13px;border-radius:999px;font-size:12px;opacity:0;pointer-events:none;transition:.2s;z-index:50;box-shadow:var(--shadow)}
+    .toast.show{opacity:1;transform:translate(-50%,0)}
+    .hidden{display:none!important}
+    .file-input{display:none}
+    .welcome{min-height:calc(100vh - 36px);display:grid;place-items:center;padding:30px}
+    .welcome-card{max-width:560px;text-align:center}
+    .welcome-card .mark{width:64px;height:64px;border-radius:20px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:28px;margin:0 auto 15px}
+    .welcome-card h2{margin:0 0 8px;font-size:23px}
+    .welcome-card p{margin:0 auto 18px;color:var(--muted);line-height:1.6;max-width:480px}
+    @media (max-width:900px){
+      .app{grid-template-columns:1fr;padding:10px;gap:10px}
+      .sidebar{position:relative;top:0;height:auto;max-height:44vh}
+      .main{min-width:0}
+      .topbar{align-items:flex-start}
+      .product-editor{grid-template-columns:110px minmax(0,1fr)}
+      .image-box{width:110px}
+    }
+    @media (max-width:620px){
+      body{font-size:13px}
+      .app{padding:8px}
+      .sidebar{max-height:38vh;border-radius:15px}
+      .topbar,.panel{border-radius:15px}
+      .topbar{flex-direction:column}
+      .top-actions{width:100%;justify-content:flex-start}
+      .product-editor{grid-template-columns:1fr}
+      .image-box{width:130px}
+      .fields{grid-template-columns:1fr}
+      .panel{padding:13px}
+      .side-footer{grid-template-columns:1fr 1fr}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <h1>Amazon Keyword Manager</h1>
+        <p>多店铺 · D1 云端数据 · R2 商品图片</p>
+      </div>
+      <div class="side-tools">
+        <div class="store-tools">
+          <select id="storeSelect" aria-label="选择店铺"></select>
+          <div class="store-actions">
+            <button class="btn small" data-store-action="add" title="新建店铺">＋店铺</button>
+            <button class="btn small" data-store-action="rename" title="重命名店铺">改名</button>
+            <button class="btn small danger" data-store-action="delete" title="删除店铺">删除</button>
+          </div>
+        </div>
+        <button class="btn primary" id="addProductBtn">＋ 新建产品</button>
+        <div class="search-wrap">
+          <span class="search-icon">⌕</span>
+          <input id="searchInput" type="search" placeholder="搜索 SKU、ASIN、关键词…" autocomplete="off" />
+        </div>
+      </div>
+      <div class="product-list" id="productList"></div>
+      <div class="side-footer">
+        <button class="btn small" id="exportBtn">导出备份</button>
+        <button class="btn small" id="importBtn">恢复备份</button>
+        <input class="file-input" id="importFile" type="file" accept="application/json,.json" />
+      </div>
+    </aside>
+
+    <main class="main" id="main"></main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <input class="file-input" id="imageFile" type="file" accept="image/*" />
+
+  <script>
+    const API_BASE = '/api';
+
+    async function apiJson(path, options = {}) {
+      const response = await fetch(`${API_BASE}${path}`, {
+        ...options,
+        headers: {
+          'accept': 'application/json',
+          ...(options.body ? { 'content-type': 'application/json' } : {}),
+          ...(options.headers || {})
+        }
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+      return data;
+    }
+
+    async function saveCloudNow() {
+      await apiJson('/state', {
+        method: 'PUT',
+        body: JSON.stringify({
+          version: 2,
+          selectedStoreId: state.selectedStoreId,
+          stores: state.stores
+        })
+      });
+    }
+
+    let saveTimer = null;
+    function saveSoon() {
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(async () => {
+        try {
+          await saveCloudNow();
+        } catch (error) {
+          console.error(error);
+          toast(error.message.includes('authentication') ? '请先通过 Cloudflare Access 登录' : '云端保存失败');
+        }
+      }, 220);
+    }
+
+    function escapeHtml(value = '') {
+      return String(value).replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
+    }
+
+    function toNumberOrBlank(value) {
+      if (value === '') return '';
+      const n = Number(value);
+      return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : '';
+    }
+
+    function makeStore(name) {
+      return {
+        id: uid(),
+        name: name || '未命名店铺',
+        products: [],
+        selectedId: null
+      };
+    }
+
+    function currentStore() {
+      return state.stores.find(store => store.id === state.selectedStoreId) || null;
+    }
+
+    function currentProducts() {
+      return currentStore()?.products || [];
+    }
+
+    function newProduct() {
+      const store = currentStore();
+      if (!store) return;
+      const product = {
+        id: uid(),
+        sku: '',
+        asin: '',
+        image: '',
+        keywords: [],
+        negatives: []
+      };
+      store.products.unshift(product);
+      store.selectedId = product.id;
+      saveSoon();
+      render();
+      requestAnimationFrame(() => $('#skuInput')?.focus());
+    }
+
+    function selectedProduct() {
+      const store = currentStore();
+      return store?.products.find(p => p.id === store.selectedId) || null;
+    }
+
+    function addStore() {
+      const defaultName = `店铺 ${state.stores.length + 1}`;
+      const name = prompt('输入店铺名称', defaultName)?.trim();
+      if (!name) return;
+      const store = makeStore(name);
+      state.stores.push(store);
+      state.selectedStoreId = store.id;
+      state.search = '';
+      $('#searchInput').value = '';
+      saveSoon();
+      render();
+      toast('店铺已创建');
+    }
+
+    function renameStore() {
+      const store = currentStore();
+      if (!store) return;
+      const name = prompt('修改店铺名称', store.name)?.trim();
+      if (!name || name === store.name) return;
+      store.name = name;
+      saveSoon();
+      render();
+      toast('店铺已重命名');
+    }
+
+    function deleteStore() {
+      const store = currentStore();
+      if (!store) return;
+      if (state.stores.length === 1) return toast('至少保留一个店铺');
+      if (!confirm(`确定删除“${store.name}”吗？该店铺下的 ${store.products.length} 个产品及全部关键词都会删除。`)) return;
+      state.stores = state.stores.filter(item => item.id !== store.id);
+      state.selectedStoreId = state.stores[0]?.id || null;
+      state.search = '';
+      $('#searchInput').value = '';
+      saveSoon();
+      render();
+      toast('店铺已删除');
+    }
+
+    function switchStore(storeId) {
+      if (!state.stores.some(store => store.id === storeId)) return;
+      state.selectedStoreId = storeId;
+      state.search = '';
+      $('#searchInput').value = '';
+      saveSoon();
+      render();
+    }
+
+    function productMatches(product, query) {
+      if (!query) return true;
+      const haystack = [
+        product.sku,
+        product.asin,
+        ...product.keywords.map(k => k.term),
+        ...product.negatives.map(k => k.term)
+      ].join(' ').toLowerCase();
+      return haystack.includes(query.toLowerCase());
+    }
+
+    function renderSidebar() {
+      const store = currentStore();
+      const products = store?.products || [];
+      const storeSelect = $('#storeSelect');
+      storeSelect.innerHTML = state.stores.map(item =>
+        `<option value="${item.id}" ${item.id === state.selectedStoreId ? 'selected' : ''}>${escapeHtml(item.name)} · ${item.products.length}</option>`
+      ).join('');
+
+      const list = $('#productList');
+      const filtered = products.filter(p => productMatches(p, state.search));
+      if (!filtered.length) {
+        list.innerHTML = `<div class="empty"><strong>${products.length ? '没有匹配结果' : '当前店铺还没有产品'}</strong>${products.length ? '换一个关键词试试' : '点击“新建产品”开始录入'}</div>`;
+        return;
+      }
+      list.innerHTML = filtered.map(product => {
+        const active = product.id === store?.selectedId ? 'active' : '';
+        const image = product.image
+          ? `<img class="thumb" src="${product.image}" alt="" />`
+          : `<div class="thumb placeholder">▧</div>`;
+        return `<button class="product-item ${active}" data-select-product="${product.id}">
+          ${image}
+          <div class="product-meta">
+            <div class="product-sku">${escapeHtml(product.sku || '未命名 SKU')}</div>
+            <div class="product-asin">${escapeHtml(product.asin || '未填写 ASIN')}</div>
+            <div class="product-counts">关键词 ${product.keywords.length} · 否定词 ${product.negatives.length}</div>
+          </div>
+        </button>`;
+      }).join('');
+    }
+
+    function renderMain() {
+      const main = $('#main');
+      const product = selectedProduct();
+      if (!product) {
+        main.innerHTML = `<section class="panel welcome">
+          <div class="welcome-card">
+            <div class="mark">K</div>
+            <h2>关键词管理台</h2>
+            <p>按 SKU / ASIN 建立产品，每个关键词分别维护 Exact、Phrase、Broad 的 Bid；否定词维护 Negative Exact / Negative Phrase。</p>
+            <button class="btn primary" data-action="new-product">＋ 新建第一个产品</button>
+          </div>
+        </section>`;
+        return;
+      }
+
+      const imageContent = product.image
+        ? `<img src="${product.image}" alt="产品图片" />`
+        : `<div class="image-empty">点击下方按钮<br>上传产品图片</div>`;
+
+      main.innerHTML = `
+        <section class="topbar">
+          <div class="title">
+            <h2>${escapeHtml(product.sku || '未命名 SKU')}</h2>
+            <div>${escapeHtml(currentStore()?.name || '未命名店铺')} · ${escapeHtml(product.asin || '未填写 ASIN')} · 自动保存到 Cloudflare</div>
+          </div>
+          <div class="top-actions">
+            <button class="btn" id="themeBtn">◐ 明暗</button>
+            <button class="btn danger" data-action="delete-product">删除产品</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">产品信息</div>
+              <div class="panel-sub">图片、SKU、ASIN 全部手工维护</div>
+            </div>
+          </div>
+          <div class="product-editor">
+            <div>
+              <div class="image-box">${imageContent}</div>
+              <div class="image-actions">
+                <button class="btn small" data-action="upload-image">${product.image ? '更换图片' : '上传图片'}</button>
+                ${product.image ? '<button class="btn small" data-action="remove-image">移除</button>' : ''}
+              </div>
+            </div>
+            <div>
+              <div class="fields">
+                <div class="field">
+                  <label for="skuInput">SKU</label>
+                  <input id="skuInput" type="text" value="${escapeHtml(product.sku)}" placeholder="例如 YTDBNS-RD-001" autocomplete="off" />
+                </div>
+                <div class="field">
+                  <label for="asinInput">ASIN</label>
+                  <input id="asinInput" type="text" value="${escapeHtml(product.asin)}" placeholder="例如 B0XXXXXXXX" autocomplete="off" />
+                </div>
+              </div>
+              <div class="stats">
+                <div class="stat">关键词 <b>${product.keywords.length}</b></div>
+                <div class="stat">否定词 <b>${product.negatives.length}</b></div>
+                <div class="stat">已设置 Bid <b>${countBids(product)}</b></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">关键词</div>
+              <div class="panel-sub">同一个关键词可分别填写 Exact / Phrase / Broad Bid</div>
+            </div>
+            <button class="btn primary small" data-action="add-keyword">＋ 添加关键词</button>
+          </div>
+          ${renderKeywordTable(product)}
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">否定词</div>
+              <div class="panel-sub">Amazon Ads 否定关键词仅使用 Negative Exact / Negative Phrase</div>
+            </div>
+            <button class="btn primary small" data-action="add-negative">＋ 添加否定词</button>
+          </div>
+          <div class="notice">这里不提供 Negative Broad 和 Bid，避免保存 Amazon Ads 中不存在的设置。</div>
+          <div style="height:10px"></div>
+          ${renderNegativeTable(product)}
+        </section>`;
+    }
+
+    function countBids(product) {
+      let total = 0;
+      for (const row of product.keywords) {
+        if (row.exact !== '') total++;
+        if (row.phrase !== '') total++;
+        if (row.broad !== '') total++;
+      }
+      return total;
+    }
+
+    function renderKeywordTable(product) {
+      if (!product.keywords.length) {
+        return `<div class="empty"><strong>还没有关键词</strong>点击右上角“添加关键词”开始录入</div>`;
+      }
+      return `<div class="table-wrap"><table>
+        <thead><tr><th>关键词</th><th>Exact Bid</th><th>Phrase Bid</th><th>Broad Bid</th><th></th></tr></thead>
+        <tbody>${product.keywords.map(row => `<tr data-keyword-row="${row.id}">
+          <td class="term"><input type="text" data-k-field="term" value="${escapeHtml(row.term)}" placeholder="输入关键词" autocomplete="off" /></td>
+          <td class="bid"><div class="bid-input"><span>$</span><input type="number" min="0" step="0.01" inputmode="decimal" data-k-field="exact" value="${escapeHtml(row.exact)}" placeholder="0.00" /></div></td>
+          <td class="bid"><div class="bid-input"><span>$</span><input type="number" min="0" step="0.01" inputmode="decimal" data-k-field="phrase" value="${escapeHtml(row.phrase)}" placeholder="0.00" /></div></td>
+          <td class="bid"><div class="bid-input"><span>$</span><input type="number" min="0" step="0.01" inputmode="decimal" data-k-field="broad" value="${escapeHtml(row.broad)}" placeholder="0.00" /></div></td>
+          <td class="action"><button class="btn icon danger" title="删除" data-delete-keyword="${row.id}">×</button></td>
+        </tr>`).join('')}</tbody>
+      </table></div>`;
+    }
+
+    function renderNegativeTable(product) {
+      if (!product.negatives.length) {
+        return `<div class="empty"><strong>还没有否定词</strong>点击右上角“添加否定词”开始录入</div>`;
+      }
+      return `<div class="table-wrap"><table style="min-width:620px">
+        <thead><tr><th>否定关键词</th><th style="text-align:center">Negative Exact</th><th style="text-align:center">Negative Phrase</th><th></th></tr></thead>
+        <tbody>${product.negatives.map(row => `<tr data-negative-row="${row.id}">
+          <td class="term"><input type="text" data-n-field="term" value="${escapeHtml(row.term)}" placeholder="输入否定关键词" autocomplete="off" /></td>
+          <td class="check-cell"><label class="check"><input type="checkbox" data-n-field="exact" ${row.exact ? 'checked' : ''} aria-label="Negative Exact" /></label></td>
+          <td class="check-cell"><label class="check"><input type="checkbox" data-n-field="phrase" ${row.phrase ? 'checked' : ''} aria-label="Negative Phrase" /></label></td>
+          <td class="action"><button class="btn icon danger" title="删除" data-delete-negative="${row.id}">×</button></td>
+        </tr>`).join('')}</tbody>
+      </table></div>`;
+    }
+
+    function render() {
+      renderSidebar();
+      renderMain();
+      bindDynamicInputs();
+    }
+
+    function bindDynamicInputs() {
+      const product = selectedProduct();
+      if (!product) return;
+
+      $('#skuInput')?.addEventListener('input', (e) => {
+        product.sku = e.target.value;
+        updateProductHeaderAndSidebar();
+        saveSoon();
+      });
+      $('#asinInput')?.addEventListener('input', (e) => {
+        product.asin = e.target.value.toUpperCase();
+        e.target.value = product.asin;
+        updateProductHeaderAndSidebar();
+        saveSoon();
+      });
+      $('#themeBtn')?.addEventListener('click', toggleTheme);
+
+      document.querySelectorAll('[data-keyword-row]').forEach(tr => {
+        const row = product.keywords.find(k => k.id === tr.dataset.keywordRow);
+        if (!row) return;
+        tr.querySelectorAll('[data-k-field]').forEach(input => {
+          input.addEventListener('input', () => {
+            const field = input.dataset.kField;
+            row[field] = field === 'term' ? input.value : toNumberOrBlank(input.value);
+            saveSoon();
+            if (field === 'term') renderSidebar();
+          });
+        });
+      });
+
+      document.querySelectorAll('[data-negative-row]').forEach(tr => {
+        const row = product.negatives.find(n => n.id === tr.dataset.negativeRow);
+        if (!row) return;
+        tr.querySelectorAll('[data-n-field]').forEach(input => {
+          input.addEventListener('change', () => {
+            const field = input.dataset.nField;
+            row[field] = field === 'term' ? input.value : input.checked;
+            saveSoon();
+            if (field === 'term') renderSidebar();
+          });
+          if (input.dataset.nField === 'term') {
+            input.addEventListener('input', () => {
+              row.term = input.value;
+              saveSoon();
+              renderSidebar();
+            });
+          }
+        });
+      });
+    }
+
+    function updateProductHeaderAndSidebar() {
+      renderSidebar();
+      const product = selectedProduct();
+      const title = document.querySelector('.topbar .title h2');
+      const sub = document.querySelector('.topbar .title div');
+      if (title) title.textContent = product?.sku || '未命名 SKU';
+      if (sub) sub.textContent = `${currentStore()?.name || '未命名店铺'} · ${product?.asin || '未填写 ASIN'} · 自动保存到 Cloudflare`;
+    }
+
+    function addKeyword() {
+      const product = selectedProduct();
+      if (!product) return;
+      product.keywords.push({ id: uid(), term: '', exact: '', phrase: '', broad: '' });
+      saveSoon();
+      render();
+      requestAnimationFrame(() => document.querySelector('[data-keyword-row]:last-child [data-k-field="term"]')?.focus());
+    }
+
+    function addNegative() {
+      const product = selectedProduct();
+      if (!product) return;
+      product.negatives.push({ id: uid(), term: '', exact: false, phrase: true });
+      saveSoon();
+      render();
+      requestAnimationFrame(() => document.querySelector('[data-negative-row]:last-child [data-n-field="term"]')?.focus());
+    }
+
+    function deleteProduct() {
+      const product = selectedProduct();
+      if (!product) return;
+      const label = product.sku || product.asin || '这个产品';
+      if (!confirm(`确定删除“${label}”及其全部关键词吗？`)) return;
+      const store = currentStore();
+      if (!store) return;
+      store.products = store.products.filter(p => p.id !== product.id);
+      store.selectedId = store.products[0]?.id || null;
+      saveSoon();
+      render();
+      toast('产品已删除');
+    }
+
+    function toggleTheme() {
+      const root = document.documentElement;
+      const dark = root.dataset.theme === 'dark';
+      root.dataset.theme = dark ? 'light' : 'dark';
+      localStorage.setItem('amazon-keyword-theme', root.dataset.theme);
+    }
+
+    function applySavedTheme() {
+      const saved = localStorage.getItem('amazon-keyword-theme');
+      const preferDark = matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.dataset.theme = saved || (preferDark ? 'dark' : 'light');
+    }
+
+    function toast(message) {
+      const el = $('#toast');
+      el.textContent = message;
+      el.classList.add('show');
+      clearTimeout(toast.timer);
+      toast.timer = setTimeout(() => el.classList.remove('show'), 1600);
+    }
+
+    async function compressImage(file) {
+      const source = await loadImageSource(file);
+      const sourceWidth = source.width || source.naturalWidth;
+      const sourceHeight = source.height || source.naturalHeight;
+      const max = 720;
+      const scale = Math.min(1, max / Math.max(sourceWidth, sourceHeight));
+      const width = Math.max(1, Math.round(sourceWidth * scale));
+      const height = Math.max(1, Math.round(sourceHeight * scale));
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(source, 0, 0, width, height);
+      source.close?.();
+      if (source._objectUrl) URL.revokeObjectURL(source._objectUrl);
+      return canvas.toDataURL('image/jpeg', .84);
+    }
+
+    async function loadImageSource(file) {
+      if ('createImageBitmap' in window) {
+        return createImageBitmap(file);
+      }
+      return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const image = new Image();
+        image.onload = () => { image._objectUrl = url; resolve(image); };
+        image.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image decode failed')); };
+        image.src = url;
+      });
+    }
+
+    async function uploadImageBlob(product, blob) {
+      await saveCloudNow();
+      const response = await fetch(`${API_BASE}/products/${encodeURIComponent(product.id)}/image`, {
+        method: 'PUT',
+        headers: { 'content-type': 'image/jpeg' },
+        body: blob
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || '图片上传失败');
+      product.image = data.url;
+    }
+
+    async function uploadDataImage(product, dataUrl) {
+      const blob = await (await fetch(dataUrl)).blob();
+      await uploadImageBlob(product, blob);
+    }
+
+    async function handleImage(file) {
+      const product = selectedProduct();
+      if (!product || !file) return;
+      if (!file.type.startsWith('image/')) return toast('请选择图片文件');
+      try {
+        const dataUrl = await compressImage(file);
+        const blob = await (await fetch(dataUrl)).blob();
+        await uploadImageBlob(product, blob);
+        render();
+        toast('图片已上传到 Cloudflare R2');
+      } catch (error) {
+        console.error(error);
+        toast(error.message || '图片处理失败');
+      }
+    }
+
+    async function removeProductImage() {
+      const product = selectedProduct();
+      if (!product) return;
+      try {
+        const response = await fetch(`${API_BASE}/products/${encodeURIComponent(product.id)}/image`, {
+          method: 'DELETE',
+          headers: { 'accept': 'application/json' }
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || '图片删除失败');
+        product.image = '';
+        render();
+        toast('R2 图片已删除');
+      } catch (error) {
+        console.error(error);
+        toast(error.message || '图片删除失败');
+      }
+    }
+
+    function blobToDataUrl(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    async function exportBackup() {
+      const stores = structuredClone(state.stores);
+      for (const store of stores) {
+        for (const product of store.products) {
+          if (typeof product.image === 'string' && product.image.startsWith('/api/images/')) {
+            try {
+              const response = await fetch(product.image);
+              if (response.ok) product.image = await blobToDataUrl(await response.blob());
+            } catch (error) {
+              console.error('Backup image fetch failed', product.id, error);
+              product.image = '';
+            }
+          }
+        }
+      }
+      const payload = {
+        app: 'Amazon Keyword Manager',
+        version: 2,
+        exportedAt: new Date().toISOString(),
+        selectedStoreId: state.selectedStoreId,
+        stores
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `amazon-keywords-${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast('备份已导出');
+    }
+
+    async function importBackup(file) {
+      if (!file) return;
+      try {
+        const parsed = JSON.parse(await file.text());
+        let stores;
+        if (Array.isArray(parsed.stores)) {
+          stores = parsed.stores.map((store, index) => normalizeStore(store, index));
+        } else if (Array.isArray(parsed.products)) {
+          stores = [normalizeStore({
+            name: '店铺 1',
+            products: parsed.products,
+            selectedId: parsed.products[0]?.id || null
+          }, 0)];
+        } else {
+          throw new Error('Invalid backup');
+        }
+        if (!stores.length) stores = [makeStore('店铺 1')];
+        const productCount = stores.reduce((sum, store) => sum + store.products.length, 0);
+        if (!confirm(`将用备份中的 ${stores.length} 个店铺、${productCount} 个产品覆盖当前数据，继续吗？`)) return;
+        state.stores = stores;
+        state.selectedStoreId = stores.some(store => store.id === parsed.selectedStoreId)
+          ? parsed.selectedStoreId
+          : stores[0].id;
+        state.search = '';
+        $('#searchInput').value = '';
+
+        const pendingImages = [];
+        for (const store of state.stores) {
+          for (const product of store.products) {
+            if (typeof product.image === 'string' && product.image.startsWith('data:image/')) {
+              pendingImages.push([product, product.image]);
+              product.image = '';
+            }
+          }
+        }
+
+        await saveCloudNow();
+        for (const [product, dataUrl] of pendingImages) {
+          await uploadDataImage(product, dataUrl);
+        }
+        render();
+        toast('备份已恢复到 Cloudflare');
+      } catch (error) {
+        console.error(error);
+        toast('备份文件无效');
+      } finally {
+        $('#importFile').value = '';
+      }
+    }
+
+    function normalizeStore(raw, index = 0) {
+      const products = Array.isArray(raw?.products) ? raw.products.map(normalizeProduct) : [];
+      const selectedId = products.some(product => product.id === raw?.selectedId)
+        ? raw.selectedId
+        : products[0]?.id || null;
+      return {
+        id: typeof raw?.id === 'string' ? raw.id : uid(),
+        name: typeof raw?.name === 'string' && raw.name.trim() ? raw.name.trim() : `店铺 ${index + 1}`,
+        products,
+        selectedId
+      };
+    }
+
+    function normalizeProduct(raw) {
+      return {
+        id: typeof raw?.id === 'string' ? raw.id : uid(),
+        sku: typeof raw?.sku === 'string' ? raw.sku : '',
+        asin: typeof raw?.asin === 'string' ? raw.asin : '',
+        image: typeof raw?.image === 'string' && (raw.image.startsWith('data:image/') || raw.image.startsWith('/api/images/')) ? raw.image : '',
+        keywords: Array.isArray(raw?.keywords) ? raw.keywords.map(k => ({
+          id: typeof k?.id === 'string' ? k.id : uid(),
+          term: typeof k?.term === 'string' ? k.term : '',
+          exact: toNumberOrBlank(k?.exact ?? ''),
+          phrase: toNumberOrBlank(k?.phrase ?? ''),
+          broad: toNumberOrBlank(k?.broad ?? '')
+        })) : [],
+        negatives: Array.isArray(raw?.negatives) ? raw.negatives.map(n => ({
+          id: typeof n?.id === 'string' ? n.id : uid(),
+          term: typeof n?.term === 'string' ? n.term : '',
+          exact: Boolean(n?.exact),
+          phrase: Boolean(n?.phrase)
+        })) : []
+      };
+    }
+
+    document.addEventListener('click', (event) => {
+      const storeAction = event.target.closest('[data-store-action]');
+      if (storeAction) {
+        const action = storeAction.dataset.storeAction;
+        if (action === 'add') addStore();
+        if (action === 'rename') renameStore();
+        if (action === 'delete') deleteStore();
+        return;
+      }
+
+      const productButton = event.target.closest('[data-select-product]');
+      if (productButton) {
+        const store = currentStore();
+        if (store) store.selectedId = productButton.dataset.selectProduct;
+        saveSoon();
+        render();
+        return;
+      }
+
+      const actionButton = event.target.closest('[data-action]');
+      if (actionButton) {
+        const action = actionButton.dataset.action;
+        if (action === 'new-product') newProduct();
+        if (action === 'delete-product') deleteProduct();
+        if (action === 'add-keyword') addKeyword();
+        if (action === 'add-negative') addNegative();
+        if (action === 'upload-image') $('#imageFile').click();
+        if (action === 'remove-image') removeProductImage();
+        return;
+      }
+
+      const deleteKeyword = event.target.closest('[data-delete-keyword]');
+      if (deleteKeyword) {
+        const product = selectedProduct();
+        product.keywords = product.keywords.filter(k => k.id !== deleteKeyword.dataset.deleteKeyword);
+        saveSoon();
+        render();
+        return;
+      }
+
+      const deleteNegative = event.target.closest('[data-delete-negative]');
+      if (deleteNegative) {
+        const product = selectedProduct();
+        product.negatives = product.negatives.filter(n => n.id !== deleteNegative.dataset.deleteNegative);
+        saveSoon();
+        render();
+      }
+    });
+
+    $('#storeSelect').addEventListener('change', (e) => switchStore(e.target.value));
+    $('#addProductBtn').addEventListener('click', newProduct);
+    $('#searchInput').addEventListener('input', (e) => {
+      state.search = e.target.value.trim();
+      renderSidebar();
+    });
+    $('#exportBtn').addEventListener('click', exportBackup);
+    $('#importBtn').addEventListener('click', () => $('#importFile').click());
+    $('#importFile').addEventListener('change', (e) => importBackup(e.target.files[0]));
+    $('#imageFile').addEventListener('change', (e) => {
+      handleImage(e.target.files[0]);
+      e.target.value = '';
+    });
+
+    async function init() {
+      applySavedTheme();
+      try {
+        const saved = await apiJson('/state');
+        if (saved && Array.isArray(saved.stores)) {
+          state.stores = saved.stores.map((store, index) => normalizeStore(store, index));
+          state.selectedStoreId = state.stores[0]?.id || null;
+        }
+        if (!state.stores.length) {
+          const firstStore = makeStore('店铺 1');
+          state.stores = [firstStore];
+          state.selectedStoreId = firstStore.id;
+          await saveCloudNow();
+        }
+      } catch (error) {
+        console.error(error);
+        toast(error.message.includes('authentication') ? '请先配置并登录 Cloudflare Access' : 'Cloudflare 数据读取失败');
+      }
+      render();
+    }
+
+    init();
+  </script>
+</body>
+</html>
