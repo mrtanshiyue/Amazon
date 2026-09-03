@@ -1,0 +1,13 @@
+{
+  "name": "amazon-keyword-manager-cloudflare",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy --config wrangler.deploy.jsonc",
+    "migrate": "wrangler d1 migrations apply amazon-keyword-manager-db --remote --config wrangler.deploy.jsonc"
+  },
+  "devDependencies": {
+    "wrangler": "^4.35.0"
+  }
+}
