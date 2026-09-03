@@ -1,0 +1,28 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "amazon-keyword-manager",
+  "main": "./src/index.js",
+  "compatibility_date": "2026-09-04",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
+  "vars": {
+    "ACCESS_REQUIRED": "true"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "amazon-keyword-manager-db",
+      "database_id": "__D1_DATABASE_ID__",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "IMAGES",
+      "bucket_name": "amazon-keyword-manager-images"
+    }
+  ]
+}
