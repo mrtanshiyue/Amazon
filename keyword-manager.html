@@ -40,7 +40,7 @@
     *{box-sizing:border-box}
     html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,"PingFang SC","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased}
     body{font-size:14px}
-    button,input{font:inherit}
+    button,input,select{font:inherit}
     button{color:inherit}
     .app{max-width:1500px;margin:0 auto;padding:18px;display:grid;grid-template-columns:320px minmax(0,1fr);gap:18px;min-height:100vh}
     .sidebar,.panel,.topbar{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
@@ -49,11 +49,15 @@
     .brand h1{font-size:19px;margin:0 0 5px;letter-spacing:-.3px}
     .brand p{margin:0;color:var(--muted);font-size:12px;line-height:1.45}
     .side-tools{padding:12px;border-bottom:1px solid var(--line);display:grid;gap:9px}
+    .store-tools{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px;align-items:center}
+    .store-tools select{min-width:0}
+    .store-actions{display:flex;gap:5px}
+    .store-actions .btn{padding:0 9px}
     .search-wrap{position:relative}
     .search-wrap input{padding-left:34px}
     .search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
-    input[type="text"],input[type="number"],input[type="search"]{width:100%;height:38px;border:1px solid var(--line);background:var(--input);color:var(--text);border-radius:10px;padding:0 11px;outline:none;transition:.18s border-color,.18s box-shadow}
-    input:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 14%,transparent)}
+    input[type="text"],input[type="number"],input[type="search"],select{width:100%;height:38px;border:1px solid var(--line);background:var(--input);color:var(--text);border-radius:10px;padding:0 11px;outline:none;transition:.18s border-color,.18s box-shadow}
+    input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 14%,transparent)}
     .product-list{padding:10px;overflow:auto;display:flex;flex-direction:column;gap:8px;flex:1}
     .product-item{width:100%;border:1px solid transparent;background:transparent;border-radius:14px;padding:9px;text-align:left;cursor:pointer;display:grid;grid-template-columns:48px minmax(0,1fr);gap:10px;align-items:center}
     .product-item:hover{background:color-mix(in srgb,var(--line) 28%,transparent)}
@@ -150,6 +154,14 @@
         <p>SKU / ASIN / 关键词 / 否定词手工管理</p>
       </div>
       <div class="side-tools">
+        <div class="store-tools">
+          <select id="storeSelect" aria-label="选择店铺"></select>
+          <div class="store-actions">
+            <button class="btn small" data-store-action="add" title="新建店铺">＋店铺</button>
+            <button class="btn small" data-store-action="rename" title="重命名店铺">改名</button>
+            <button class="btn small danger" data-store-action="delete" title="删除店铺">删除</button>
+          </div>
+        </div>
         <button class="btn primary" id="addProductBtn">＋ 新建产品</button>
         <div class="search-wrap">
           <span class="search-icon">⌕</span>
@@ -177,8 +189,8 @@
     const STATE_KEY = 'state';
 
     const state = {
-      products: [],
-      selectedId: null,
+      stores: [],
+      selectedStoreId: null,
       search: ''
     };
 
@@ -223,7 +235,11 @@
       clearTimeout(saveTimer);
       saveTimer = setTimeout(async () => {
         try {
-          await dbSet(STATE_KEY, { products: state.products, selectedId: state.selectedId });
+          await dbSet(STATE_KEY, {
+            version: 2,
+            stores: state.stores,
+            selectedStoreId: state.selectedStoreId
+          });
         } catch (error) {
           console.error(error);
           toast('保存失败，请先导出备份');
@@ -241,7 +257,26 @@
       return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : '';
     }
 
+    function makeStore(name) {
+      return {
+        id: uid(),
+        name: name || '未命名店铺',
+        products: [],
+        selectedId: null
+      };
+    }
+
+    function currentStore() {
+      return state.stores.find(store => store.id === state.selectedStoreId) || null;
+    }
+
+    function currentProducts() {
+      return currentStore()?.products || [];
+    }
+
     function newProduct() {
+      const store = currentStore();
+      if (!store) return;
       const product = {
         id: uid(),
         sku: '',
@@ -250,15 +285,64 @@
         keywords: [],
         negatives: []
       };
-      state.products.unshift(product);
-      state.selectedId = product.id;
+      store.products.unshift(product);
+      store.selectedId = product.id;
       saveSoon();
       render();
       requestAnimationFrame(() => $('#skuInput')?.focus());
     }
 
     function selectedProduct() {
-      return state.products.find(p => p.id === state.selectedId) || null;
+      const store = currentStore();
+      return store?.products.find(p => p.id === store.selectedId) || null;
+    }
+
+    function addStore() {
+      const defaultName = `店铺 ${state.stores.length + 1}`;
+      const name = prompt('输入店铺名称', defaultName)?.trim();
+      if (!name) return;
+      const store = makeStore(name);
+      state.stores.push(store);
+      state.selectedStoreId = store.id;
+      state.search = '';
+      $('#searchInput').value = '';
+      saveSoon();
+      render();
+      toast('店铺已创建');
+    }
+
+    function renameStore() {
+      const store = currentStore();
+      if (!store) return;
+      const name = prompt('修改店铺名称', store.name)?.trim();
+      if (!name || name === store.name) return;
+      store.name = name;
+      saveSoon();
+      render();
+      toast('店铺已重命名');
+    }
+
+    function deleteStore() {
+      const store = currentStore();
+      if (!store) return;
+      if (state.stores.length === 1) return toast('至少保留一个店铺');
+      if (!confirm(`确定删除“${store.name}”吗？该店铺下的 ${store.products.length} 个产品及全部关键词都会删除。`)) return;
+      state.stores = state.stores.filter(item => item.id !== store.id);
+      state.selectedStoreId = state.stores[0]?.id || null;
+      state.search = '';
+      $('#searchInput').value = '';
+      saveSoon();
+      render();
+      toast('店铺已删除');
+    }
+
+    function switchStore(storeId) {
+      if (!state.stores.some(store => store.id === storeId)) return;
+      state.selectedStoreId = storeId;
+      state.search = '';
+      $('#searchInput').value = '';
+      saveSoon();
+      render();
     }
 
     function productMatches(product, query) {
@@ -273,14 +357,21 @@
     }
 
     function renderSidebar() {
+      const store = currentStore();
+      const products = store?.products || [];
+      const storeSelect = $('#storeSelect');
+      storeSelect.innerHTML = state.stores.map(item =>
+        `<option value="${item.id}" ${item.id === state.selectedStoreId ? 'selected' : ''}>${escapeHtml(item.name)} · ${item.products.length}</option>`
+      ).join('');
+
       const list = $('#productList');
-      const filtered = state.products.filter(p => productMatches(p, state.search));
+      const filtered = products.filter(p => productMatches(p, state.search));
       if (!filtered.length) {
-        list.innerHTML = `<div class="empty"><strong>${state.products.length ? '没有匹配结果' : '还没有产品'}</strong>${state.products.length ? '换一个关键词试试' : '点击“新建产品”开始录入'}</div>`;
+        list.innerHTML = `<div class="empty"><strong>${products.length ? '没有匹配结果' : '当前店铺还没有产品'}</strong>${products.length ? '换一个关键词试试' : '点击“新建产品”开始录入'}</div>`;
         return;
       }
       list.innerHTML = filtered.map(product => {
-        const active = product.id === state.selectedId ? 'active' : '';
+        const active = product.id === store?.selectedId ? 'active' : '';
         const image = product.image
           ? `<img class="thumb" src="${product.image}" alt="" />`
           : `<div class="thumb placeholder">▧</div>`;
@@ -318,7 +409,7 @@
         <section class="topbar">
           <div class="title">
             <h2>${escapeHtml(product.sku || '未命名 SKU')}</h2>
-            <div>${escapeHtml(product.asin || '未填写 ASIN')} · 自动保存到当前浏览器</div>
+            <div>${escapeHtml(currentStore()?.name || '未命名店铺')} · ${escapeHtml(product.asin || '未填写 ASIN')} · 自动保存到当前浏览器</div>
           </div>
           <div class="top-actions">
             <button class="btn" id="themeBtn">◐ 明暗</button>
@@ -490,7 +581,7 @@
       const title = document.querySelector('.topbar .title h2');
       const sub = document.querySelector('.topbar .title div');
       if (title) title.textContent = product?.sku || '未命名 SKU';
-      if (sub) sub.textContent = `${product?.asin || '未填写 ASIN'} · 自动保存到当前浏览器`;
+      if (sub) sub.textContent = `${currentStore()?.name || '未命名店铺'} · ${product?.asin || '未填写 ASIN'} · 自动保存到当前浏览器`;
     }
 
     function addKeyword() {
@@ -516,8 +607,10 @@
       if (!product) return;
       const label = product.sku || product.asin || '这个产品';
       if (!confirm(`确定删除“${label}”及其全部关键词吗？`)) return;
-      state.products = state.products.filter(p => p.id !== product.id);
-      state.selectedId = state.products[0]?.id || null;
+      const store = currentStore();
+      if (!store) return;
+      store.products = store.products.filter(p => p.id !== product.id);
+      store.selectedId = store.products[0]?.id || null;
       saveSoon();
       render();
       toast('产品已删除');
@@ -592,9 +685,10 @@
     function exportBackup() {
       const payload = {
         app: 'Amazon Keyword Manager',
-        version: 1,
+        version: 2,
         exportedAt: new Date().toISOString(),
-        products: state.products
+        selectedStoreId: state.selectedStoreId,
+        stores: state.stores
       };
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
       const url = URL.createObjectURL(blob);
@@ -610,11 +704,32 @@
       if (!file) return;
       try {
         const parsed = JSON.parse(await file.text());
-        if (!Array.isArray(parsed.products)) throw new Error('Invalid backup');
-        if (!confirm(`将用备份中的 ${parsed.products.length} 个产品覆盖当前数据，继续吗？`)) return;
-        state.products = parsed.products.map(normalizeProduct);
-        state.selectedId = state.products[0]?.id || null;
-        await dbSet(STATE_KEY, { products: state.products, selectedId: state.selectedId });
+        let stores;
+        if (Array.isArray(parsed.stores)) {
+          stores = parsed.stores.map((store, index) => normalizeStore(store, index));
+        } else if (Array.isArray(parsed.products)) {
+          stores = [normalizeStore({
+            name: '店铺 1',
+            products: parsed.products,
+            selectedId: parsed.products[0]?.id || null
+          }, 0)];
+        } else {
+          throw new Error('Invalid backup');
+        }
+        if (!stores.length) stores = [makeStore('店铺 1')];
+        const productCount = stores.reduce((sum, store) => sum + store.products.length, 0);
+        if (!confirm(`将用备份中的 ${stores.length} 个店铺、${productCount} 个产品覆盖当前数据，继续吗？`)) return;
+        state.stores = stores;
+        state.selectedStoreId = stores.some(store => store.id === parsed.selectedStoreId)
+          ? parsed.selectedStoreId
+          : stores[0].id;
+        state.search = '';
+        $('#searchInput').value = '';
+        await dbSet(STATE_KEY, {
+          version: 2,
+          stores: state.stores,
+          selectedStoreId: state.selectedStoreId
+        });
         render();
         toast('备份已恢复');
       } catch (error) {
@@ -623,6 +738,19 @@
       } finally {
         $('#importFile').value = '';
       }
+    }
+
+    function normalizeStore(raw, index = 0) {
+      const products = Array.isArray(raw?.products) ? raw.products.map(normalizeProduct) : [];
+      const selectedId = products.some(product => product.id === raw?.selectedId)
+        ? raw.selectedId
+        : products[0]?.id || null;
+      return {
+        id: typeof raw?.id === 'string' ? raw.id : uid(),
+        name: typeof raw?.name === 'string' && raw.name.trim() ? raw.name.trim() : `店铺 ${index + 1}`,
+        products,
+        selectedId
+      };
     }
 
     function normalizeProduct(raw) {
@@ -648,9 +776,19 @@
     }
 
     document.addEventListener('click', (event) => {
+      const storeAction = event.target.closest('[data-store-action]');
+      if (storeAction) {
+        const action = storeAction.dataset.storeAction;
+        if (action === 'add') addStore();
+        if (action === 'rename') renameStore();
+        if (action === 'delete') deleteStore();
+        return;
+      }
+
       const productButton = event.target.closest('[data-select-product]');
       if (productButton) {
-        state.selectedId = productButton.dataset.selectProduct;
+        const store = currentStore();
+        if (store) store.selectedId = productButton.dataset.selectProduct;
         saveSoon();
         render();
         return;
@@ -689,6 +827,7 @@
       }
     });
 
+    $('#storeSelect').addEventListener('change', (e) => switchStore(e.target.value));
     $('#addProductBtn').addEventListener('click', newProduct);
     $('#searchInput').addEventListener('input', (e) => {
       state.search = e.target.value.trim();
@@ -706,9 +845,29 @@
       applySavedTheme();
       try {
         const saved = await dbGet(STATE_KEY);
-        if (saved && Array.isArray(saved.products)) {
-          state.products = saved.products.map(normalizeProduct);
-          state.selectedId = state.products.some(p => p.id === saved.selectedId) ? saved.selectedId : state.products[0]?.id || null;
+        if (saved && Array.isArray(saved.stores)) {
+          state.stores = saved.stores.map((store, index) => normalizeStore(store, index));
+          state.selectedStoreId = state.stores.some(store => store.id === saved.selectedStoreId)
+            ? saved.selectedStoreId
+            : state.stores[0]?.id || null;
+        } else if (saved && Array.isArray(saved.products)) {
+          const migrated = normalizeStore({
+            name: '店铺 1',
+            products: saved.products,
+            selectedId: saved.selectedId
+          }, 0);
+          state.stores = [migrated];
+          state.selectedStoreId = migrated.id;
+          await dbSet(STATE_KEY, {
+            version: 2,
+            stores: state.stores,
+            selectedStoreId: state.selectedStoreId
+          });
+        }
+        if (!state.stores.length) {
+          const firstStore = makeStore('店铺 1');
+          state.stores = [firstStore];
+          state.selectedStoreId = firstStore.id;
         }
       } catch (error) {
         console.error(error);
