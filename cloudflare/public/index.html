@@ -265,8 +265,12 @@
     }
 
     function newProduct() {
-      const store = currentStore();
-      if (!store) return;
+      let store = currentStore();
+      if (!store) {
+        store = makeStore(`店铺 ${state.stores.length + 1}`);
+        state.stores.push(store);
+        state.selectedStoreId = store.id;
+      }
       const product = {
         id: uid(),
         sku: '',
@@ -288,16 +292,14 @@
     }
 
     function addStore() {
-      const defaultName = `店铺 ${state.stores.length + 1}`;
-      const name = prompt('输入店铺名称', defaultName)?.trim();
-      if (!name) return;
-      const store = makeStore(name);
+      const store = makeStore(`店铺 ${state.stores.length + 1}`);
       state.stores.push(store);
       state.selectedStoreId = store.id;
       state.search = '';
       $('#searchInput').value = '';
       render();
-      toast('店铺已创建');
+      saveSoon();
+      toast('店铺已创建，可点击“改名”修改名称');
     }
 
     function renameStore() {
