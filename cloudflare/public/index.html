@@ -135,9 +135,14 @@
     .overview-list{display:grid;max-height:360px;overflow:auto;border-top:1px solid var(--border)}
     .overview-list-row{padding:10px 0;border-bottom:1px solid var(--border);min-width:0}
     .overview-list-row:last-child{border-bottom:0}
-    .keyword-row-head{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0}
+    .overview-filter-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:-2px 0 10px;user-select:none;-webkit-user-select:none}
+    .filter-chip{height:28px;border:1px solid var(--border);background:var(--surface-subtle);color:var(--text-2);border-radius:999px;padding:0 10px;font-size:10.5px;font-weight:720;display:inline-flex;align-items:center;gap:5px}
+    .filter-chip:hover{background:var(--surface-hover);color:var(--text)}
+    .filter-chip.active{background:var(--text);color:var(--surface);border-color:var(--text)}
+    .filter-count{opacity:.62;font-variant-numeric:tabular-nums}
+    .keyword-overview-line{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;min-width:0}
     .keyword-term-select{min-width:0;font-size:12px;font-weight:760;line-height:1.45;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:text;user-select:text;-webkit-user-select:text}
-    .keyword-row-meta{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px;user-select:none;-webkit-user-select:none}
+    .keyword-bid-side{display:flex;align-items:center;gap:5px;flex-wrap:wrap;justify-content:flex-end;user-select:none;-webkit-user-select:none}
     .negative-row-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
     .negative-term{min-width:0;font-size:12px;font-weight:760;line-height:1.45;word-break:break-word}
     .overview-empty{padding:24px 0 6px;color:var(--text-3);font-size:11.5px;text-align:center}
@@ -261,6 +266,8 @@
       .field-grid{grid-template-columns:1fr 1fr}
       .overview-detail-grid{grid-template-columns:1fr}
       .metric-grid{grid-template-columns:repeat(3,1fr)}
+      .keyword-overview-line{grid-template-columns:minmax(0,1fr) auto}
+      .keyword-bid-side{grid-column:1 / -1;justify-content:flex-start;margin-top:4px}
       .preview-row{grid-template-columns:1fr}
       .preview-bids{justify-content:flex-start}
       .dialog-backdrop{padding:8px}
@@ -478,6 +485,8 @@
     let productModalDraft = null;
     let mainView = 'overview';
     let storeModalMode = 'create';
+    let keywordOverviewFilter = 'all';
+    let negativeOverviewFilter = 'all';
 
     async function apiJson(path, options = {}) {
       const response = await fetch(`${API_BASE}${path}`, {
@@ -1002,6 +1011,8 @@
       state.selectedStoreId = storeId;
       state.search = '';
       mainView = 'overview';
+      keywordOverviewFilter = 'all';
+      negativeOverviewFilter = 'all';
       $('#searchInput').value = '';
       render();
     }
@@ -1077,7 +1088,14 @@
         ? `<img src="${product.image}" alt="产品图片" />`
         : '<div class="image-empty">暂无商品图片</div>';
 
-      const keywordOverviewRows = product.keywords.map(row => {
+      const filteredKeywords = product.keywords.filter(row =>
+        keywordOverviewFilter === 'confirmed'
+          ? row.status === 'confirmed'
+          : keywordOverviewFilter === 'watching'
+            ? row.status !== 'confirmed'
+            : true
+      );
+      const keywordOverviewRows = filteredKeywords.map(row => {
         const status = row.status === 'confirmed'
           ? '<span class="keyword-status confirmed">确认</span>'
           : '<span class="keyword-status watching">待观察</span>';
@@ -1087,18 +1105,25 @@
           row.broad !== '' ? `<span class="bid-chip">Broad $ ${escapeHtml(row.broad)}</span>` : ''
         ].filter(Boolean).join('');
         return `<div class="overview-list-row">
-          <div class="keyword-row-head">
+          <div class="keyword-overview-line">
             <span class="keyword-term-select" data-keyword-term>${escapeHtml(row.term || '未命名关键词')}</span>
+            <div class="keyword-bid-side">${bids || '<span class="bid-chip">未设置 Bid</span>'}</div>
             ${status}
           </div>
-          <div class="keyword-row-meta">${bids || '<span class="bid-chip">未设置 Bid</span>'}</div>
         </div>`;
       }).join('');
 
-      const negativeOverviewRows = product.negatives.map(row => {
+      const filteredNegatives = product.negatives.filter(row =>
+        negativeOverviewFilter === 'phrase'
+          ? row.phrase
+          : negativeOverviewFilter === 'exact'
+            ? row.exact
+            : true
+      );
+      const negativeOverviewRows = filteredNegatives.map(row => {
         const badges = [
-          row.exact ? '<span class="match-badge">Negative Exact</span>' : '',
-          row.phrase ? '<span class="match-badge">Negative Phrase</span>' : ''
+          row.exact ? '<span class="match-badge">精准</span>' : '',
+          row.phrase ? '<span class="match-badge">词组</span>' : ''
         ].filter(Boolean).join('');
         return `<div class="overview-list-row">
           <div class="negative-row-head">
@@ -1107,6 +1132,11 @@
           </div>
         </div>`;
       }).join('');
+
+      const confirmedCount = product.keywords.filter(row => row.status === 'confirmed').length;
+      const watchingCount = product.keywords.length - confirmedCount;
+      const negativePhraseCount = product.negatives.filter(row => row.phrase).length;
+      const negativeExactCount = product.negatives.filter(row => row.exact).length;
 
       const overview = `<div class="content-view">
         <div class="overview-layout">
@@ -1154,8 +1184,13 @@
                   </div>
                   <button class="overview-link" data-main-view="keywords">查看全部 · ${product.keywords.length}</button>
                 </div>
+                <div class="overview-filter-bar" aria-label="关键词筛选">
+                  <button class="filter-chip ${keywordOverviewFilter === 'all' ? 'active' : ''}" data-keyword-filter="all">全部 <span class="filter-count">${product.keywords.length}</span></button>
+                  <button class="filter-chip ${keywordOverviewFilter === 'confirmed' ? 'active' : ''}" data-keyword-filter="confirmed">确认 <span class="filter-count">${confirmedCount}</span></button>
+                  <button class="filter-chip ${keywordOverviewFilter === 'watching' ? 'active' : ''}" data-keyword-filter="watching">待观察 <span class="filter-count">${watchingCount}</span></button>
+                </div>
                 <div class="overview-list">
-                  ${keywordOverviewRows || '<div class="overview-empty">当前商品还没有关键词</div>'}
+                  ${keywordOverviewRows || '<div class="overview-empty">当前筛选下没有关键词</div>'}
                 </div>
               </section>
 
@@ -1167,8 +1202,13 @@
                   </div>
                   <button class="overview-link" data-main-view="negatives">查看全部 · ${product.negatives.length}</button>
                 </div>
+                <div class="overview-filter-bar" aria-label="否定关键词筛选">
+                  <button class="filter-chip ${negativeOverviewFilter === 'all' ? 'active' : ''}" data-negative-filter="all">全部 <span class="filter-count">${product.negatives.length}</span></button>
+                  <button class="filter-chip ${negativeOverviewFilter === 'phrase' ? 'active' : ''}" data-negative-filter="phrase">词组 <span class="filter-count">${negativePhraseCount}</span></button>
+                  <button class="filter-chip ${negativeOverviewFilter === 'exact' ? 'active' : ''}" data-negative-filter="exact">精准 <span class="filter-count">${negativeExactCount}</span></button>
+                </div>
                 <div class="overview-list">
-                  ${negativeOverviewRows || '<div class="overview-empty">当前商品还没有否定关键词</div>'}
+                  ${negativeOverviewRows || '<div class="overview-empty">当前筛选下没有否定关键词</div>'}
                 </div>
               </section>
             </div>
@@ -1497,6 +1537,7 @@
       const term = event.target.closest('[data-keyword-term]');
       if (!term) return;
       event.preventDefault();
+      event.stopPropagation();
       const selection = window.getSelection?.();
       if (!selection || !document.createRange) return;
       const range = document.createRange();
@@ -1515,6 +1556,20 @@
         return;
       }
 
+      const keywordFilterButton = event.target.closest('[data-keyword-filter]');
+      if (keywordFilterButton) {
+        keywordOverviewFilter = keywordFilterButton.dataset.keywordFilter;
+        renderMain();
+        return;
+      }
+
+      const negativeFilterButton = event.target.closest('[data-negative-filter]');
+      if (negativeFilterButton) {
+        negativeOverviewFilter = negativeFilterButton.dataset.negativeFilter;
+        renderMain();
+        return;
+      }
+
       const viewButton = event.target.closest('[data-main-view]');
       if (viewButton) {
         setMainView(viewButton.dataset.mainView);
@@ -1526,6 +1581,8 @@
         const store = currentStore();
         if (store) store.selectedId = productButton.dataset.selectProduct;
         mainView = 'overview';
+        keywordOverviewFilter = 'all';
+        negativeOverviewFilter = 'all';
         render();
         return;
       }
