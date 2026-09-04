@@ -156,6 +156,7 @@ function validateState(payload) {
           id: cleanId(rawRow?.id),
           term: cleanText(rawRow?.term, 500),
           status: cleanKeywordStatus(rawRow?.status),
+          type: cleanKeywordType(rawRow?.type),
           exact: cleanBid(rawRow?.exact),
           phrase: cleanBid(rawRow?.phrase),
           broad: cleanBid(rawRow?.broad)
@@ -259,6 +260,12 @@ function cleanText(value, max) {
 
 function cleanKeywordStatus(value) {
   return value === "confirmed" ? "confirmed" : "watching";
+}
+
+function cleanKeywordType(value) {
+  if (value === "core") return "core";
+  if (value === "longtail") return "longtail";
+  return "";
 }
 
 function cleanBid(value) {
