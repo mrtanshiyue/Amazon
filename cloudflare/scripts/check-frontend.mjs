@@ -17,7 +17,13 @@ for (const required of [
   'data-main-view="overview"',
   'data-keyword-term',
   'keyword-status confirmed',
-  'keyword-status watching'
+  'keyword-status watching',
+  'data-keyword-filter="confirmed"',
+  'data-keyword-filter="watching"',
+  'data-negative-filter="phrase"',
+  'data-negative-filter="exact"',
+  'keyword-overview-line',
+  'keyword-bid-side'
 ]) {
   if (!html.includes(required)) throw new Error(`Missing UI structure: ${required}`);
 }
@@ -248,5 +254,38 @@ if (!mainHtml.includes("关键词") || !mainHtml.includes("否定关键词")) {
 if (!mainHtml.includes('data-keyword-term') || !mainHtml.includes("确认")) {
   throw new Error("Overview keyword term/status structure is missing");
 }
+if (!mainHtml.includes("keyword-overview-line") || !mainHtml.includes("keyword-bid-side")) {
+  throw new Error("Keyword Bid must stay on the same right-side row");
+}
+if (!mainHtml.includes('data-keyword-filter="confirmed"') || !mainHtml.includes('data-keyword-filter="watching"')) {
+  throw new Error("Keyword status filters are missing");
+}
+if (!mainHtml.includes('data-negative-filter="phrase"') || !mainHtml.includes('data-negative-filter="exact"')) {
+  throw new Error("Negative phrase/exact filters are missing");
+}
 
-console.log("Frontend UI/runtime smoke test passed: verified R2 saves, dual keyword/negative overview, term-only selection structure, labels, transactional editing");
+vm.runInContext("keywordOverviewFilter = 'confirmed'; renderMain()", context);
+mainHtml = elements.get("#main").innerHTML;
+if (!mainHtml.includes("Reading Glasses for Women") || !mainHtml.includes("确认")) {
+  throw new Error("Confirmed keyword filter failed");
+}
+
+vm.runInContext("keywordOverviewFilter = 'watching'; renderMain()", context);
+mainHtml = elements.get("#main").innerHTML;
+if (mainHtml.includes("Reading Glasses for Women")) {
+  throw new Error("Watching keyword filter should exclude confirmed keyword");
+}
+
+vm.runInContext("negativeOverviewFilter = 'phrase'; renderMain()", context);
+mainHtml = elements.get("#main").innerHTML;
+if (!mainHtml.includes("kids") || !mainHtml.includes("词组")) {
+  throw new Error("Negative phrase filter failed");
+}
+
+vm.runInContext("negativeOverviewFilter = 'exact'; renderMain()", context);
+mainHtml = elements.get("#main").innerHTML;
+if (mainHtml.includes(">kids<")) {
+  throw new Error("Negative exact filter should exclude phrase-only negative");
+}
+
+console.log("Frontend UI/runtime smoke test passed: right-side Bid layout, keyword/negative filters, term-only selection structure, verified R2 persistence");
