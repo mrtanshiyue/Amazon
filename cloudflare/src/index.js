@@ -106,15 +106,18 @@ async function saveState(request, env) {
     return json({ error: "Initial state precondition required" }, 409);
   }
 
-  const onlyIf = current
-    ? { etagMatches: stripQuotes(ifMatch) }
-    : { etagDoesNotMatch: "*" };
+  const conditionalHeaders = new Headers();
+  if (current) {
+    conditionalHeaders.set("if-match", ifMatch);
+  } else {
+    conditionalHeaders.set("if-none-match", "*");
+  }
 
   const stored = await env.STORAGE.put(
     STATE_KEY,
     JSON.stringify({ version: 2, stores: validated.stores }),
     {
-      onlyIf,
+      onlyIf: conditionalHeaders,
       httpMetadata: {
         contentType: "application/json; charset=utf-8",
         cacheControl: "private, no-store"
@@ -275,10 +278,6 @@ function cleanBid(value) {
   return Number.isFinite(number) && number >= 0 && number <= 10000
     ? Math.round(number * 100) / 100
     : "";
-}
-
-function stripQuotes(value) {
-  return typeof value === "string" ? value.replace(/^W\//, "").replace(/^"|"$/g, "") : "";
 }
 
 function json(data, status = 200) {
