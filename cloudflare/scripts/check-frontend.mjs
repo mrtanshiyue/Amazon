@@ -260,13 +260,18 @@ vm.runInContext("productModalDraft.negatives[0].term = 'kids'; productModalDraft
 
 elements.get("#productModalSku").value = "YS005";
 elements.get("#productModalAsin").value = "B0TEST1234";
-await vm.runInContext("saveProductFromModal()", context);
+vm.runInContext("saveProductFromModal()", context);
+
+const draftClosedImmediately = vm.runInContext("productModalDraft === null", context);
+if (!draftClosedImmediately) throw new Error("Product editor must close immediately after save click");
 
 const productsAfterSave = vm.runInContext("currentStore().products.length", context);
 if (productsAfterSave !== 1) throw new Error(`Save product failed: ${productsAfterSave}`);
 
 const selectedSku = vm.runInContext("selectedProduct().sku", context);
 if (selectedSku !== "YS005") throw new Error(`Selected product mismatch: ${selectedSku}`);
+
+await new Promise(resolve => setTimeout(resolve, 40));
 
 const persistedBulkTerms = cloudState.stores
   .flatMap(store => store.products || [])
@@ -309,7 +314,10 @@ if (!mainHtml.includes("kids") || !mainHtml.includes("Negative Phrase")) {
 vm.runInContext("editCurrentProduct()", context);
 elements.get("#productModalSku").value = "YS005-EDIT";
 vm.runInContext("productModalDraft.keywords[0].phrase = 1.35; productModalDraft.keywords[0].status = 'confirmed'", context);
-await vm.runInContext("saveProductFromModal()", context);
+vm.runInContext("saveProductFromModal()", context);
+
+const editDraftClosedImmediately = vm.runInContext("productModalDraft === null", context);
+if (!editDraftClosedImmediately) throw new Error("Product editor must close immediately after edit save");
 
 const editedSku = vm.runInContext("selectedProduct().sku", context);
 if (editedSku !== "YS005-EDIT") throw new Error(`Edit product failed: ${editedSku}`);
@@ -319,6 +327,8 @@ mainHtml = elements.get("#main").innerHTML;
 if (!mainHtml.includes("YS005-EDIT") || !mainHtml.includes("$ 1.35") || !mainHtml.includes("确认")) {
   throw new Error("Edited product or confirmed keyword label is not reflected in keyword read-only view");
 }
+
+await new Promise(resolve => setTimeout(resolve, 40));
 
 const persistedKeywordStatus = cloudState.stores
   .flatMap(store => store.products || [])
@@ -373,4 +383,4 @@ if (mainHtml.includes(">kids<")) {
   throw new Error("Negative exact filter should exclude phrase-only negative");
 }
 
-console.log("Frontend UI/runtime smoke test passed: bulk watching/confirmed import, dedupe, right-side Bid layout, filters, verified R2 persistence");
+console.log("Frontend UI/runtime smoke test passed: immediate-close background save, bulk import, filters, verified R2 persistence");
