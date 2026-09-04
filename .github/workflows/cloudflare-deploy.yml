@@ -40,7 +40,7 @@ jobs:
           test -n "$CLOUDFLARE_ACCOUNT_ID" || (echo "Missing CLOUDFLARE_ACCOUNT_ID" && exit 1)
 
       - name: Install Wrangler
-        run: npm install
+        run: npm install --no-audit --no-fund --prefer-offline
 
       - name: Ensure D1 database
         id: d1
