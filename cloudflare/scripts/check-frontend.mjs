@@ -26,6 +26,11 @@ for (const required of [
   '确认关键词',
   '待观察关键词',
   '否定关键词',
+  'overview-filter-toolbar',
+  'data-keyword-filter="confirmed"',
+  'data-keyword-filter="watching"',
+  'data-negative-filter="phrase"',
+  'data-negative-filter="exact"',
   'name="bulkKeywordStatus" value="watching"',
   'name="bulkKeywordStatus" value="confirmed"',
   'data-copy-group="confirmed"',
@@ -369,10 +374,20 @@ if (
 }
 
 clipboardText = "";
+vm.runInContext("negativeOverviewFilter = 'phrase'", context);
 await vm.runInContext("copyKeywordGroup('negative')", context);
 if (clipboardText !== "kids") {
-  throw new Error(`Negative copy format/content failed: ${clipboardText}`);
+  throw new Error(`Filtered negative copy format/content failed: ${clipboardText}`);
 }
+
+clipboardText = "";
+vm.runInContext("negativeOverviewFilter = 'exact'", context);
+await vm.runInContext("copyKeywordGroup('negative')", context);
+if (clipboardText !== "") {
+  throw new Error(`Exact filtered negative copy should be empty: ${clipboardText}`);
+}
+
+vm.runInContext("negativeOverviewFilter = 'all'", context);
 
 vm.runInContext("setMainView('overview')", context);
 mainHtml = elements.get("#main").innerHTML;
@@ -395,4 +410,28 @@ if (!mainHtml.includes("kids") || !mainHtml.includes("词组")) {
   throw new Error("Negative keyword table or match mode is missing");
 }
 
-console.log("Frontend UI/runtime smoke test passed: group copy one-per-line, three overview tables, background save, bulk import, verified R2 persistence");
+vm.runInContext("keywordOverviewFilter = 'confirmed'; renderMain()", context);
+mainHtml = elements.get("#main").innerHTML;
+if (!mainHtml.includes("确认关键词") || mainHtml.includes("待观察关键词")) {
+  throw new Error("Confirmed keyword table filter failed");
+}
+
+vm.runInContext("keywordOverviewFilter = 'watching'; renderMain()", context);
+mainHtml = elements.get("#main").innerHTML;
+if (!mainHtml.includes("待观察关键词") || mainHtml.includes("确认关键词")) {
+  throw new Error("Watching keyword table filter failed");
+}
+
+vm.runInContext("keywordOverviewFilter = 'all'; negativeOverviewFilter = 'phrase'; renderMain()", context);
+mainHtml = elements.get("#main").innerHTML;
+if (!mainHtml.includes("kids") || !mainHtml.includes("词组")) {
+  throw new Error("Negative phrase filter failed");
+}
+
+vm.runInContext("negativeOverviewFilter = 'exact'; renderMain()", context);
+mainHtml = elements.get("#main").innerHTML;
+if (mainHtml.includes(">kids<")) {
+  throw new Error("Negative exact filter should exclude phrase-only row");
+}
+
+console.log("Frontend UI/runtime smoke test passed: restored overview filters, group copy, three tables, background save, bulk import, verified R2 persistence");
