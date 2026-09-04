@@ -91,11 +91,8 @@ const document = {
 };
 
 let revision = 0;
-let cloudState = { version: 2, stores: [] };
-const currentEtag = () => revision ? `"etag-${revision}"` : "";
-const responseHeaders = etag => ({
-  get: name => name.toLowerCase() === "etag" ? etag : null
-});
+let cloudState = { version: 3, stores: [] };
+const responseHeaders = () => ({ get: () => null });
 
 const fetch = async (url, options = {}) => {
   const method = options.method || "GET";
@@ -103,33 +100,18 @@ const fetch = async (url, options = {}) => {
     return {
       ok: true,
       status: 200,
-      headers: responseHeaders(currentEtag()),
+      headers: responseHeaders(),
       json: async () => structuredClone(cloudState)
     };
   }
   if (String(url).endsWith("/api/state") && method === "PUT") {
-    const headers = options.headers || {};
-    const ifMatch = headers["if-match"] || headers["If-Match"] || "";
-    const ifNoneMatch = headers["if-none-match"] || headers["If-None-Match"] || "";
-    const etagBefore = currentEtag();
-    const versionOk = revision ? ifMatch === etagBefore : ifNoneMatch === "*";
-
-    if (!versionOk) {
-      return {
-        ok: false,
-        status: 409,
-        headers: responseHeaders(etagBefore),
-        json: async () => ({ error: "State changed on another device" })
-      };
-    }
-
     cloudState = JSON.parse(options.body);
     revision += 1;
     return {
       ok: true,
       status: 200,
-      headers: responseHeaders(currentEtag()),
-      json: async () => ({ ok: true })
+      headers: responseHeaders(),
+      json: async () => ({ ok: true, updatedAt: "2026-09-04T00:00:00.000Z" })
     };
   }
   return {
@@ -172,9 +154,11 @@ const initialStores = vm.runInContext("state.stores.length", context);
 if (initialStores !== 1) throw new Error(`Expected 1 initialized store, got ${initialStores}`);
 
 await vm.runInContext("Promise.all([saveCloudNow(), saveCloudNow()])", context);
+if (revision < 2) throw new Error("Serialized cloud save queue did not execute both writes");
 
-revision += 1;
-await vm.runInContext("saveCloudNow()", context);
+const persistedAfterQueue = JSON.stringify(cloudState.stores);
+const expectedAfterQueue = vm.runInContext("JSON.stringify(cloudStatePayload().stores)", context);
+if (persistedAfterQueue !== expectedAfterQueue) throw new Error("Cloud state verification failed after queued saves");
 
 vm.runInContext("addStore()", context);
 elements.get("#storeModalName").value = "Store 02";
@@ -246,4 +230,4 @@ if (!mainHtml.includes("overview-layout") || !mainHtml.includes("Cloudflare R2")
   throw new Error("Rebuilt read-only workspace is missing");
 }
 
-console.log("Frontend UI/runtime smoke test passed: serialized R2 saves, harmless ETag drift recovery, store/product editing, read-only views");
+console.log("Frontend UI/runtime smoke test passed: serialized verified R2 saves, transactional store/product editing, read-only views");
