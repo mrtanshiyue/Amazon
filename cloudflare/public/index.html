@@ -1265,10 +1265,18 @@
       if (!product) return;
 
       let terms = [];
+      const visibleKeywordRows = product.keywords.filter(row =>
+        keywordTypeOverviewFilter === 'core'
+          ? row.type === 'core'
+          : keywordTypeOverviewFilter === 'longtail'
+            ? row.type === 'longtail'
+            : true
+      );
+
       if (group === 'confirmed') {
-        terms = product.keywords.filter(row => row.status === 'confirmed').map(row => row.term);
+        terms = visibleKeywordRows.filter(row => row.status === 'confirmed').map(row => row.term);
       } else if (group === 'watching') {
-        terms = product.keywords.filter(row => row.status !== 'confirmed').map(row => row.term);
+        terms = visibleKeywordRows.filter(row => row.status !== 'confirmed').map(row => row.term);
       } else if (group === 'negative') {
         terms = product.negatives
           .filter(row =>
@@ -1530,12 +1538,13 @@
         return '<div class="read-empty">暂无关键词</div>';
       }
       return `<div class="table-wrap"><table class="read-table">
-        <thead><tr><th>关键词</th><th>标签</th><th>Exact Bid</th><th>Phrase Bid</th><th>Broad Bid</th></tr></thead>
+        <thead><tr><th>关键词</th><th>状态</th><th>类型</th><th>Exact Bid</th><th>Phrase Bid</th><th>Broad Bid</th></tr></thead>
         <tbody>${product.keywords.map(row => `<tr>
           <td><span class="keyword-term-select" data-keyword-term>${escapeHtml(row.term || '—')}</span></td>
           <td>${row.status === 'confirmed'
             ? '<span class="keyword-status confirmed">确认</span>'
             : '<span class="keyword-status watching">待观察</span>'}</td>
+          <td>${keywordTypeBadge(row)}</td>
           <td class="money">${row.exact === '' ? '—' : '$ ' + escapeHtml(row.exact)}</td>
           <td class="money">${row.phrase === '' ? '—' : '$ ' + escapeHtml(row.phrase)}</td>
           <td class="money">${row.broad === '' ? '—' : '$ ' + escapeHtml(row.broad)}</td>
