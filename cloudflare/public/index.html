@@ -1319,8 +1319,17 @@
         ? `<img src="${product.image}" alt="产品图片" />`
         : '<div class="image-empty">暂无商品图片</div>';
 
-      const confirmedKeywords = product.keywords.filter(row => row.status === 'confirmed');
-      const watchingKeywords = product.keywords.filter(row => row.status !== 'confirmed');
+      const typedKeywords = product.keywords.filter(row =>
+        keywordTypeOverviewFilter === 'core'
+          ? row.type === 'core'
+          : keywordTypeOverviewFilter === 'longtail'
+            ? row.type === 'longtail'
+            : true
+      );
+      const confirmedKeywords = typedKeywords.filter(row => row.status === 'confirmed');
+      const watchingKeywords = typedKeywords.filter(row => row.status !== 'confirmed');
+      const coreKeywordCount = product.keywords.filter(row => row.type === 'core').length;
+      const longtailKeywordCount = product.keywords.filter(row => row.type === 'longtail').length;
       const showConfirmedKeywords = keywordOverviewFilter === 'all' || keywordOverviewFilter === 'confirmed';
       const showWatchingKeywords = keywordOverviewFilter === 'all' || keywordOverviewFilter === 'watching';
 
