@@ -11,18 +11,10 @@
   "vars": {
     "ACCESS_REQUIRED": "true"
   },
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "amazon-keyword-manager-db",
-      "database_id": "__D1_DATABASE_ID__",
-      "migrations_dir": "migrations"
-    }
-  ],
   "r2_buckets": [
     {
-      "binding": "IMAGES",
-      "bucket_name": "amazon-keyword-manager-images"
+      "binding": "STORAGE",
+      "bucket_name": "amazon-keyword-manager-storage"
     }
   ]
 }
