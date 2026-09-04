@@ -27,7 +27,10 @@ for (const required of [
   '待观察关键词',
   '否定关键词',
   'name="bulkKeywordStatus" value="watching"',
-  'name="bulkKeywordStatus" value="confirmed"'
+  'name="bulkKeywordStatus" value="confirmed"',
+  'data-copy-group="confirmed"',
+  'data-copy-group="watching"',
+  'data-copy-group="negative"'
 ]) {
   if (!html.includes(required)) throw new Error(`Missing UI structure: ${required}`);
 }
@@ -156,9 +159,16 @@ const fetch = async (url, options = {}) => {
 };
 
 const storage = new Map();
+let clipboardText = "";
+const navigator = {
+  clipboard: {
+    writeText: async value => { clipboardText = String(value); }
+  }
+};
 const context = vm.createContext({
   console,
   document,
+  navigator,
   window: {},
   localStorage: {
     getItem: key => storage.get(key) ?? null,
@@ -336,6 +346,34 @@ if (persistedKeywordStatus !== "confirmed") {
   throw new Error(`Keyword status did not persist to cloud state: ${persistedKeywordStatus}`);
 }
 
+clipboardText = "";
+await vm.runInContext("copyKeywordGroup('confirmed')", context);
+const confirmedCopied = clipboardText.split("\n");
+if (
+  confirmedCopied.length !== 2 ||
+  !confirmedCopied.includes("Reading Glasses for Women") ||
+  !confirmedCopied.includes("fashion readers")
+) {
+  throw new Error(`Confirmed copy format/content failed: ${clipboardText}`);
+}
+
+clipboardText = "";
+await vm.runInContext("copyKeywordGroup('watching')", context);
+const watchingCopied = clipboardText.split("\n");
+if (
+  watchingCopied.length !== 2 ||
+  !watchingCopied.includes("Blue Light Readers") ||
+  !watchingCopied.includes("computer readers")
+) {
+  throw new Error(`Watching copy format/content failed: ${clipboardText}`);
+}
+
+clipboardText = "";
+await vm.runInContext("copyKeywordGroup('negative')", context);
+if (clipboardText !== "kids") {
+  throw new Error(`Negative copy format/content failed: ${clipboardText}`);
+}
+
 vm.runInContext("setMainView('overview')", context);
 mainHtml = elements.get("#main").innerHTML;
 if (!mainHtml.includes("overview-layout") || !mainHtml.includes("Cloudflare R2")) {
@@ -357,4 +395,4 @@ if (!mainHtml.includes("kids") || !mainHtml.includes("词组")) {
   throw new Error("Negative keyword table or match mode is missing");
 }
 
-console.log("Frontend UI/runtime smoke test passed: three overview keyword tables, immediate-close background save, bulk import, verified R2 persistence");
+console.log("Frontend UI/runtime smoke test passed: group copy one-per-line, three overview tables, background save, bulk import, verified R2 persistence");
