@@ -130,8 +130,18 @@
     .product-image img{display:block;width:100%;height:auto;max-height:540px;object-fit:contain}
     .image-empty{color:var(--text-3);font-size:11px;text-align:center;padding:20px}
     .overview-main{min-width:0;display:grid;gap:12px}
-    .overview-detail-grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(320px,.9fr);gap:12px;align-items:stretch}
-    .overview-detail-grid .overview-card{height:100%}
+    .overview-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
+    .overview-detail-grid .overview-card{height:100%;min-width:0}
+    .overview-list{display:grid;max-height:360px;overflow:auto;border-top:1px solid var(--border)}
+    .overview-list-row{padding:10px 0;border-bottom:1px solid var(--border);min-width:0}
+    .overview-list-row:last-child{border-bottom:0}
+    .keyword-row-head{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0}
+    .keyword-term-select{min-width:0;font-size:12px;font-weight:760;line-height:1.45;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:text;user-select:text;-webkit-user-select:text}
+    .keyword-row-meta{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px;user-select:none;-webkit-user-select:none}
+    .negative-row-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+    .negative-term{min-width:0;font-size:12px;font-weight:760;line-height:1.45;word-break:break-word}
+    .overview-empty{padding:24px 0 6px;color:var(--text-3);font-size:11.5px;text-align:center}
+    .keyword-status,.bid-chip,.match-badge{user-select:none;-webkit-user-select:none}
     .overview-card{border:1px solid var(--border);background:var(--surface);border-radius:12px;padding:15px}
     .overview-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
     .overview-heading{font-size:14.5px;font-weight:800;letter-spacing:-.015em;margin:0}
@@ -168,7 +178,7 @@
     .read-empty{padding:44px 20px;text-align:center;color:var(--text-3);font-size:12px}
     .match-badges{display:flex;gap:5px;flex-wrap:wrap}
     .match-badge{display:inline-flex;align-items:center;border:1px solid var(--border);background:var(--surface-subtle);border-radius:999px;padding:4px 7px;font-size:10px;color:var(--text-2);font-weight:650}
-    .keyword-status{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:4px 8px;font-size:10px;font-weight:760;white-space:nowrap;border:1px solid var(--border)}
+    .keyword-status{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:4px 8px;font-size:10px;font-weight:760;white-space:nowrap;border:1px solid var(--border);user-select:none;-webkit-user-select:none;flex:0 0 auto}
     .keyword-status:before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
     .keyword-status.confirmed{color:var(--success);background:var(--success-soft);border-color:color-mix(in srgb,var(--success) 20%,var(--border))}
     .keyword-status.watching{color:var(--accent);background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 20%,var(--border))}
@@ -1067,18 +1077,34 @@
         ? `<img src="${product.image}" alt="产品图片" />`
         : '<div class="image-empty">暂无商品图片</div>';
 
-      const keywordPreview = product.keywords.slice(0, 5).map(row => {
-        const chips = [
+      const keywordOverviewRows = product.keywords.map(row => {
+        const status = row.status === 'confirmed'
+          ? '<span class="keyword-status confirmed">确认</span>'
+          : '<span class="keyword-status watching">待观察</span>';
+        const bids = [
           row.exact !== '' ? `<span class="bid-chip">Exact $ ${escapeHtml(row.exact)}</span>` : '',
           row.phrase !== '' ? `<span class="bid-chip">Phrase $ ${escapeHtml(row.phrase)}</span>` : '',
           row.broad !== '' ? `<span class="bid-chip">Broad $ ${escapeHtml(row.broad)}</span>` : ''
         ].filter(Boolean).join('');
-        const status = row.status === 'confirmed'
-          ? '<span class="keyword-status confirmed">确认</span>'
-          : '<span class="keyword-status watching">待观察</span>';
-        return `<div class="preview-row">
-          <div class="preview-term">${escapeHtml(row.term || '未命名关键词')} ${status}</div>
-          <div class="preview-bids">${chips || '<span class="bid-chip">未设置 Bid</span>'}</div>
+        return `<div class="overview-list-row">
+          <div class="keyword-row-head">
+            <span class="keyword-term-select" data-keyword-term>${escapeHtml(row.term || '未命名关键词')}</span>
+            ${status}
+          </div>
+          <div class="keyword-row-meta">${bids || '<span class="bid-chip">未设置 Bid</span>'}</div>
+        </div>`;
+      }).join('');
+
+      const negativeOverviewRows = product.negatives.map(row => {
+        const badges = [
+          row.exact ? '<span class="match-badge">Negative Exact</span>' : '',
+          row.phrase ? '<span class="match-badge">Negative Phrase</span>' : ''
+        ].filter(Boolean).join('');
+        return `<div class="overview-list-row">
+          <div class="negative-row-head">
+            <span class="negative-term">${escapeHtml(row.term || '未命名否定词')}</span>
+            <div class="match-badges">${badges || '<span class="match-badge">未设置</span>'}</div>
+          </div>
         </div>`;
       }).join('');
 
@@ -1123,22 +1149,26 @@
               <section class="overview-card">
                 <div class="overview-card-head">
                   <div>
-                    <h3 class="overview-heading">关键词预览</h3>
+                    <h3 class="overview-heading">关键词</h3>
+                    <div class="section-sub">确认状态与 Bid 一起查看</div>
                   </div>
-                  <button class="overview-link" data-main-view="keywords">查看全部</button>
+                  <button class="overview-link" data-main-view="keywords">查看全部 · ${product.keywords.length}</button>
                 </div>
-                ${keywordPreview || '<div class="preview-empty">当前商品还没有关键词</div>'}
+                <div class="overview-list">
+                  ${keywordOverviewRows || '<div class="overview-empty">当前商品还没有关键词</div>'}
+                </div>
               </section>
 
               <section class="overview-card">
                 <div class="overview-card-head">
-                  <h3 class="overview-heading">否定词摘要</h3>
-                  <button class="overview-link" data-main-view="negatives">查看全部</button>
+                  <div>
+                    <h3 class="overview-heading">否定关键词</h3>
+                    <div class="section-sub">Negative Exact / Negative Phrase</div>
+                  </div>
+                  <button class="overview-link" data-main-view="negatives">查看全部 · ${product.negatives.length}</button>
                 </div>
-                <div class="metric-grid">
-                  <div class="metric"><div class="metric-label">Negative Exact</div><div class="metric-value">${product.negatives.filter(row => row.exact).length}</div></div>
-                  <div class="metric"><div class="metric-label">Negative Phrase</div><div class="metric-value">${product.negatives.filter(row => row.phrase).length}</div></div>
-                  <div class="metric"><div class="metric-label">总否定词</div><div class="metric-value">${product.negatives.length}</div></div>
+                <div class="overview-list">
+                  ${negativeOverviewRows || '<div class="overview-empty">当前商品还没有否定关键词</div>'}
                 </div>
               </section>
             </div>
@@ -1203,7 +1233,7 @@
       return `<div class="table-wrap"><table class="read-table">
         <thead><tr><th>关键词</th><th>标签</th><th>Exact Bid</th><th>Phrase Bid</th><th>Broad Bid</th></tr></thead>
         <tbody>${product.keywords.map(row => `<tr>
-          <td>${escapeHtml(row.term || '—')}</td>
+          <td><span class="keyword-term-select" data-keyword-term>${escapeHtml(row.term || '—')}</span></td>
           <td>${row.status === 'confirmed'
             ? '<span class="keyword-status confirmed">确认</span>'
             : '<span class="keyword-status watching">待观察</span>'}</td>
@@ -1462,6 +1492,18 @@
         })) : []
       };
     }
+
+    document.addEventListener('dblclick', (event) => {
+      const term = event.target.closest('[data-keyword-term]');
+      if (!term) return;
+      event.preventDefault();
+      const selection = window.getSelection?.();
+      if (!selection || !document.createRange) return;
+      const range = document.createRange();
+      range.selectNodeContents(term);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    });
 
     document.addEventListener('click', (event) => {
       const storeAction = event.target.closest('[data-store-action]');
