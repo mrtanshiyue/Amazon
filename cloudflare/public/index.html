@@ -507,19 +507,67 @@
       };
     }
 
+    function canonicalCloudState(value) {
+      const stores = Array.isArray(value?.stores) ? value.stores : [];
+      return {
+        stores: stores.map(store => ({
+          id: String(store?.id || ''),
+          name: String(store?.name || '').trim(),
+          products: (Array.isArray(store?.products) ? store.products : []).map(product => ({
+            id: String(product?.id || ''),
+            sku: String(product?.sku || '').trim(),
+            asin: String(product?.asin || '').trim().toUpperCase(),
+            image: typeof product?.image === 'string' && product.image.startsWith('/api/images/')
+              ? product.image.split('?')[0]
+              : '',
+            keywords: (Array.isArray(product?.keywords) ? product.keywords : []).map(row => ({
+              id: String(row?.id || ''),
+              term: String(row?.term || '').trim(),
+              exact: toNumberOrBlank(row?.exact ?? ''),
+              phrase: toNumberOrBlank(row?.phrase ?? ''),
+              broad: toNumberOrBlank(row?.broad ?? '')
+            })),
+            negatives: (Array.isArray(product?.negatives) ? product.negatives : []).map(row => ({
+              id: String(row?.id || ''),
+              term: String(row?.term || '').trim(),
+              exact: Boolean(row?.exact),
+              phrase: Boolean(row?.phrase)
+            }))
+          }))
+        }))
+      };
+    }
+
+    async function verifyCloudState(expectedPayload) {
+      const response = await fetch(`${API_BASE}/state`, {
+        headers: { 'accept': 'application/json' },
+        cache: 'no-store'
+      });
+      const saved = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(saved.error || `HTTP ${response.status}`);
+
+      const expected = JSON.stringify(canonicalCloudState(expectedPayload));
+      const actual = JSON.stringify(canonicalCloudState(saved));
+      if (actual !== expected) {
+        throw new Error('云端保存后校验不一致');
+      }
+    }
+
     async function performCloudSave() {
+      const payload = cloudStatePayload();
       const response = await fetch(`${API_BASE}/state`, {
         method: 'PUT',
         headers: {
           'accept': 'application/json',
           'content-type': 'application/json'
         },
-        body: JSON.stringify(cloudStatePayload())
+        body: JSON.stringify(payload)
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
         throw new Error(data.error || `HTTP ${response.status}`);
       }
+      await verifyCloudState(payload);
       return data;
     }
 
@@ -842,27 +890,55 @@
       const name = $('#storeModalName').value.trim();
       if (!name) return toast('请输入店铺名称');
 
-      if (storeModalMode === 'create') {
-        const store = makeStore(name);
-        state.stores.push(store);
-        state.selectedStoreId = store.id;
-        state.search = '';
-        $('#searchInput').value = '';
-        mainView = 'overview';
-        await saveCloudNow();
+      const saveBtn = $('#storeModalSaveBtn');
+      saveBtn.disabled = true;
+      saveBtn.textContent = '保存中…';
+
+      try {
+        if (storeModalMode === 'create') {
+          const previousStoreId = state.selectedStoreId;
+          const store = makeStore(name);
+          state.stores.push(store);
+          state.selectedStoreId = store.id;
+          state.search = '';
+          $('#searchInput').value = '';
+          mainView = 'overview';
+
+          try {
+            await saveCloudNow();
+          } catch (error) {
+            state.stores = state.stores.filter(item => item.id !== store.id);
+            state.selectedStoreId = previousStoreId;
+            throw error;
+          }
+
+          closeStoreModal();
+          render();
+          toast('店铺已保存到云端');
+          return;
+        }
+
+        const store = currentStore();
+        if (!store) return;
+        const previousName = store.name;
+        store.name = name;
+        try {
+          await saveCloudNow();
+        } catch (error) {
+          store.name = previousName;
+          throw error;
+        }
         closeStoreModal();
         render();
-        toast('店铺已创建');
-        return;
+        toast('店铺名称已保存到云端');
+      } catch (error) {
+        console.error(error);
+        render();
+        toast('店铺保存失败：' + error.message);
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = '保存';
       }
-
-      const store = currentStore();
-      if (!store) return;
-      store.name = name;
-      await saveCloudNow();
-      closeStoreModal();
-      render();
-      toast('店铺名称已更新');
     }
 
     function addStore() {
@@ -873,19 +949,31 @@
       openStoreModal('rename');
     }
 
-    function deleteStore() {
+    async function deleteStore() {
       const store = currentStore();
       if (!store) return;
       if (state.stores.length === 1) return toast('至少保留一个店铺');
       if (!confirm(`确定删除“${store.name}”吗？该店铺下的 ${store.products.length} 个产品及全部关键词都会删除。`)) return;
+
+      const previousStores = state.stores.slice();
+      const previousStoreId = state.selectedStoreId;
       state.stores = state.stores.filter(item => item.id !== store.id);
       state.selectedStoreId = state.stores[0]?.id || null;
       state.search = '';
       $('#searchInput').value = '';
-      saveSoon();
       mainView = 'overview';
       render();
-      toast('店铺已删除');
+
+      try {
+        await saveCloudNow();
+        toast('店铺已从云端删除');
+      } catch (error) {
+        console.error(error);
+        state.stores = previousStores;
+        state.selectedStoreId = previousStoreId;
+        render();
+        toast('删除失败：' + error.message);
+      }
     }
 
     function switchStore(storeId) {
@@ -1136,18 +1224,31 @@
 
     function bindDynamicInputs() {}
 
-    function deleteProduct() {
+    async function deleteProduct() {
       const product = selectedProduct();
       if (!product) return;
       const label = product.sku || product.asin || '这个产品';
       if (!confirm(`确定删除“${label}”及其全部关键词吗？`)) return;
       const store = currentStore();
       if (!store) return;
+
+      const previousProducts = store.products.slice();
+      const previousSelectedId = store.selectedId;
       store.products = store.products.filter(p => p.id !== product.id);
       store.selectedId = store.products[0]?.id || null;
-      saveSoon();
       render();
-      toast('产品已删除');
+
+      try {
+        await saveCloudNow();
+        await deleteProductImageById(product.id).catch(() => {});
+        toast('商品已从云端删除');
+      } catch (error) {
+        console.error(error);
+        store.products = previousProducts;
+        store.selectedId = previousSelectedId;
+        render();
+        toast('删除失败：' + error.message);
+      }
     }
 
     function toggleTheme() {
