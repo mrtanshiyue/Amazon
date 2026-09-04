@@ -140,6 +140,12 @@
     .copy-all-btn{height:28px;border:1px solid var(--border);background:var(--surface-subtle);color:var(--text-2);border-radius:8px;padding:0 9px;font-size:10px;font-weight:760;white-space:nowrap}
     .copy-all-btn:hover{background:var(--surface-hover);color:var(--text)}
     .copy-all-btn:disabled{opacity:.4;cursor:not-allowed}
+    .overview-filter-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--border);background:var(--surface);border-radius:10px}
+    .overview-filter-group{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+    .overview-filter-label{font-size:9.5px;font-weight:820;color:var(--text-3);text-transform:uppercase;letter-spacing:.07em;margin-right:2px}
+    .overview-filter-chip{height:28px;border:1px solid var(--border);background:var(--surface-subtle);color:var(--text-2);border-radius:999px;padding:0 10px;font-size:10.5px;font-weight:730}
+    .overview-filter-chip:hover{background:var(--surface-hover);color:var(--text)}
+    .overview-filter-chip.active{background:var(--text);color:var(--surface);border-color:var(--text)}
     .overview-mini-table{width:100%;border-collapse:collapse;min-width:0}
     .overview-mini-table th,.overview-mini-table td{padding:9px 10px;border-bottom:1px solid var(--border);font-size:11px;vertical-align:middle}
     .overview-mini-table th{background:var(--surface-subtle);color:var(--text-3);font-size:9px;text-transform:uppercase;letter-spacing:.065em;font-weight:820;white-space:nowrap}
@@ -535,6 +541,8 @@
     let productModalDraft = null;
     let mainView = 'overview';
     let storeModalMode = 'create';
+    let keywordOverviewFilter = 'all';
+    let negativeOverviewFilter = 'all';
 
 
     async function apiJson(path, options = {}) {
@@ -1134,6 +1142,8 @@
       state.selectedStoreId = storeId;
       state.search = '';
       mainView = 'overview';
+      keywordOverviewFilter = 'all';
+      negativeOverviewFilter = 'all';
       $('#searchInput').value = '';
       render();
     }
@@ -1219,7 +1229,15 @@
       } else if (group === 'watching') {
         terms = product.keywords.filter(row => row.status !== 'confirmed').map(row => row.term);
       } else if (group === 'negative') {
-        terms = product.negatives.map(row => row.term);
+        terms = product.negatives
+          .filter(row =>
+            negativeOverviewFilter === 'phrase'
+              ? row.phrase
+              : negativeOverviewFilter === 'exact'
+                ? row.exact
+                : true
+          )
+          .map(row => row.term);
       }
 
       const cleaned = terms.map(term => String(term || '').trim()).filter(Boolean);
@@ -1257,6 +1275,8 @@
 
       const confirmedKeywords = product.keywords.filter(row => row.status === 'confirmed');
       const watchingKeywords = product.keywords.filter(row => row.status !== 'confirmed');
+      const showConfirmedKeywords = keywordOverviewFilter === 'all' || keywordOverviewFilter === 'confirmed';
+      const showWatchingKeywords = keywordOverviewFilter === 'all' || keywordOverviewFilter === 'watching';
 
       const renderKeywordOverviewRows = rows => rows.map(row => `<tr>
         <td class="kw-col"><span class="keyword-term-select" data-keyword-term>${escapeHtml(row.term || '未命名关键词')}</span></td>
@@ -1265,7 +1285,15 @@
         <td class="bid-col">${row.broad === '' ? '—' : '$' + escapeHtml(row.broad)}</td>
       </tr>`).join('');
 
-      const negativeOverviewRows = product.negatives.map(row => {
+      const visibleNegatives = product.negatives.filter(row =>
+        negativeOverviewFilter === 'phrase'
+          ? row.phrase
+          : negativeOverviewFilter === 'exact'
+            ? row.exact
+            : true
+      );
+
+      const negativeOverviewRows = visibleNegatives.map(row => {
         const badges = [
           row.exact ? '<span class="match-badge">精准</span>' : '',
           row.phrase ? '<span class="match-badge">词组</span>' : ''
@@ -1313,8 +1341,23 @@
               <div class="metric"><div class="metric-label">已设置 Bid</div><div class="metric-value">${countBids(product)}</div></div>
             </div>
 
+            <div class="overview-filter-toolbar">
+              <div class="overview-filter-group" aria-label="关键词筛选">
+                <span class="overview-filter-label">关键词</span>
+                <button class="overview-filter-chip ${keywordOverviewFilter === 'all' ? 'active' : ''}" type="button" data-keyword-filter="all">全部</button>
+                <button class="overview-filter-chip ${keywordOverviewFilter === 'confirmed' ? 'active' : ''}" type="button" data-keyword-filter="confirmed">确认 ${confirmedKeywords.length}</button>
+                <button class="overview-filter-chip ${keywordOverviewFilter === 'watching' ? 'active' : ''}" type="button" data-keyword-filter="watching">待观察 ${watchingKeywords.length}</button>
+              </div>
+              <div class="overview-filter-group" aria-label="否定关键词筛选">
+                <span class="overview-filter-label">否定关键词</span>
+                <button class="overview-filter-chip ${negativeOverviewFilter === 'all' ? 'active' : ''}" type="button" data-negative-filter="all">全部</button>
+                <button class="overview-filter-chip ${negativeOverviewFilter === 'phrase' ? 'active' : ''}" type="button" data-negative-filter="phrase">词组 ${product.negatives.filter(row => row.phrase).length}</button>
+                <button class="overview-filter-chip ${negativeOverviewFilter === 'exact' ? 'active' : ''}" type="button" data-negative-filter="exact">精准 ${product.negatives.filter(row => row.exact).length}</button>
+              </div>
+            </div>
+
             <div class="overview-detail-grid">
-              <section class="overview-card">
+              ${showConfirmedKeywords ? `<section class="overview-card">
                 <div class="overview-table-head">
                   <div>
                     <div class="overview-table-title">确认关键词</div>
@@ -1329,9 +1372,9 @@
                   <thead><tr><th>关键词</th><th>Exact</th><th>Phrase</th><th>Broad</th></tr></thead>
                   <tbody>${renderKeywordOverviewRows(confirmedKeywords)}</tbody>
                 </table></div>` : '<div class="overview-table-empty">暂无确认关键词</div>'}
-              </section>
+              </section>` : ''}
 
-              <section class="overview-card">
+              ${showWatchingKeywords ? `<section class="overview-card">
                 <div class="overview-table-head">
                   <div>
                     <div class="overview-table-title">待观察关键词</div>
@@ -1346,7 +1389,7 @@
                   <thead><tr><th>关键词</th><th>Exact</th><th>Phrase</th><th>Broad</th></tr></thead>
                   <tbody>${renderKeywordOverviewRows(watchingKeywords)}</tbody>
                 </table></div>` : '<div class="overview-table-empty">暂无待观察关键词</div>'}
-              </section>
+              </section>` : ''}
 
               <section class="overview-card">
                 <div class="overview-table-head">
@@ -1355,14 +1398,14 @@
                     <div class="overview-table-sub">精准 / 词组匹配</div>
                   </div>
                   <div class="overview-table-actions">
-                    <button class="copy-all-btn" type="button" data-copy-group="negative" ${product.negatives.length ? '' : 'disabled'}>复制全部</button>
-                    <span class="overview-table-count">${product.negatives.length}</span>
+                    <button class="copy-all-btn" type="button" data-copy-group="negative" ${visibleNegatives.length ? '' : 'disabled'}>复制全部</button>
+                    <span class="overview-table-count">${visibleNegatives.length}</span>
                   </div>
                 </div>
-                ${product.negatives.length ? `<div class="table-wrap"><table class="overview-mini-table">
+                ${visibleNegatives.length ? `<div class="table-wrap"><table class="overview-mini-table">
                   <thead><tr><th>否定词</th><th style="text-align:right">匹配方式</th></tr></thead>
                   <tbody>${negativeOverviewRows}</tbody>
-                </table></div>` : '<div class="overview-table-empty">暂无否定关键词</div>'}
+                </table></div>` : '<div class="overview-table-empty">当前筛选下暂无否定关键词</div>'}
               </section>
             </div>            </div>
           </div>
@@ -1709,6 +1752,20 @@
         return;
       }
 
+      const keywordFilterButton = event.target.closest('[data-keyword-filter]');
+      if (keywordFilterButton) {
+        keywordOverviewFilter = keywordFilterButton.dataset.keywordFilter;
+        renderMain();
+        return;
+      }
+
+      const negativeFilterButton = event.target.closest('[data-negative-filter]');
+      if (negativeFilterButton) {
+        negativeOverviewFilter = negativeFilterButton.dataset.negativeFilter;
+        renderMain();
+        return;
+      }
+
       const copyButton = event.target.closest('[data-copy-group]');
       if (copyButton && !copyButton.disabled) {
         copyKeywordGroup(copyButton.dataset.copyGroup);
@@ -1726,6 +1783,8 @@
         const store = currentStore();
         if (store) store.selectedId = productButton.dataset.selectProduct;
         mainView = 'overview';
+        keywordOverviewFilter = 'all';
+        negativeOverviewFilter = 'all';
         render();
         return;
       }
