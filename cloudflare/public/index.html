@@ -62,7 +62,7 @@
     .product-item{width:100%;border:1px solid transparent;background:transparent;border-radius:14px;padding:9px;text-align:left;cursor:pointer;display:grid;grid-template-columns:48px minmax(0,1fr);gap:10px;align-items:center}
     .product-item:hover{background:color-mix(in srgb,var(--line) 28%,transparent)}
     .product-item.active{background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 28%,transparent)}
-    .thumb{width:48px;height:48px;border-radius:11px;border:1px solid var(--line);background:var(--bg);object-fit:cover;display:block}
+    .thumb{width:48px;height:48px;border-radius:11px;border:1px solid var(--line);background:var(--card);object-fit:contain;display:block;padding:3px}
     .thumb.placeholder{display:grid;place-items:center;color:var(--muted);font-size:18px}
     .product-meta{min-width:0}
     .product-sku{font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -88,7 +88,7 @@
     .panel-sub{font-size:11.5px;color:var(--muted);margin-top:3px}
     .product-editor{display:grid;grid-template-columns:150px minmax(0,1fr);gap:16px;align-items:start}
     .image-box{width:150px;aspect-ratio:1;border:1px dashed color-mix(in srgb,var(--muted) 55%,var(--line));border-radius:16px;background:var(--bg);overflow:hidden;display:grid;place-items:center;position:relative}
-    .image-box img{width:100%;height:100%;object-fit:cover}
+    .image-box img{width:100%;height:100%;object-fit:contain;background:var(--card);padding:6px}
     .image-empty{padding:14px;text-align:center;color:var(--muted);font-size:12px;line-height:1.5}
     .image-actions{display:flex;gap:7px;margin-top:8px}
     .fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -123,6 +123,19 @@
     .welcome-card .mark{width:64px;height:64px;border-radius:20px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:28px;margin:0 auto 15px}
     .welcome-card h2{margin:0 0 8px;font-size:23px}
     .welcome-card p{margin:0 auto 18px;color:var(--muted);line-height:1.6;max-width:480px}
+    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.38);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:100;display:none;align-items:center;justify-content:center;padding:20px}
+    .modal-backdrop.open{display:flex}
+    .modal-card{width:min(620px,100%);max-height:92vh;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:22px;box-shadow:0 28px 80px rgba(0,0,0,.22)}
+    .modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px;border-bottom:1px solid var(--line)}
+    .modal-head h2{margin:0;font-size:19px;letter-spacing:-.2px}
+    .modal-body{padding:20px}
+    .modal-image-row{display:grid;grid-template-columns:170px minmax(0,1fr);gap:18px;align-items:start;margin-bottom:18px}
+    .modal-image-preview{width:170px;aspect-ratio:1;border:1px dashed color-mix(in srgb,var(--muted) 55%,var(--line));border-radius:16px;background:var(--bg);display:grid;place-items:center;overflow:hidden;color:var(--muted);font-size:12px;text-align:center;line-height:1.5;padding:8px}
+    .modal-image-preview img{width:100%;height:100%;object-fit:contain;background:var(--card)}
+    .modal-image-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .modal-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .modal-note{color:var(--muted);font-size:11.5px;line-height:1.55;margin-top:8px}
+    .modal-footer{display:flex;justify-content:flex-end;gap:9px;padding:14px 20px 20px}
     @media (max-width:900px){
       .app{grid-template-columns:1fr;padding:10px;gap:10px}
       .sidebar{position:relative;top:0;height:auto;max-height:44vh}
@@ -143,6 +156,11 @@
       .fields{grid-template-columns:1fr}
       .panel{padding:13px}
       .side-footer{grid-template-columns:1fr 1fr}
+      .modal-backdrop{padding:10px}
+      .modal-card{border-radius:18px}
+      .modal-image-row{grid-template-columns:1fr}
+      .modal-image-preview{width:150px}
+      .modal-fields{grid-template-columns:1fr}
     }
   </style>
 </head>
@@ -179,6 +197,44 @@
     <main class="main" id="main"></main>
   </div>
 
+  <div class="modal-backdrop" id="productModal" aria-hidden="true">
+    <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="productModalTitle">
+      <div class="modal-head">
+        <h2 id="productModalTitle">添加商品</h2>
+        <button class="btn icon" id="productModalCloseBtn" type="button" aria-label="关闭">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-image-row">
+          <div>
+            <div class="modal-image-preview" id="productModalImagePreview">完整商品图片预览</div>
+            <div class="modal-image-actions">
+              <button class="btn small" id="productModalChooseImageBtn" type="button">选择图片</button>
+              <button class="btn small hidden" id="productModalRemoveImageBtn" type="button">移除图片</button>
+            </div>
+          </div>
+          <div>
+            <div class="modal-fields">
+              <div class="field">
+                <label for="productModalSku">SKU</label>
+                <input id="productModalSku" type="text" placeholder="例如 YS005" autocomplete="off" />
+              </div>
+              <div class="field">
+                <label for="productModalAsin">ASIN</label>
+                <input id="productModalAsin" type="text" placeholder="例如 B0XXXXXXXX" autocomplete="off" />
+              </div>
+            </div>
+            <div class="modal-note">填写商品信息后点击“保存商品”。保存成功后商品会出现在左侧列表，点击左侧商品即可在右侧查看和维护数据。</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" id="productModalCancelBtn" type="button">取消</button>
+        <button class="btn primary" id="productModalSaveBtn" type="button">保存商品</button>
+      </div>
+      <input class="file-input" id="productModalImageFile" type="file" accept="image/*" />
+    </section>
+  </div>
+
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <input class="file-input" id="imageFile" type="file" accept="image/*" />
 
@@ -196,6 +252,7 @@
     const uid = () => crypto.randomUUID
       ? crypto.randomUUID()
       : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    let pendingProductImageData = '';
 
     async function apiJson(path, options = {}) {
       const response = await fetch(`${API_BASE}${path}`, {
@@ -276,25 +333,111 @@
     }
 
     function newProduct() {
+      openProductModal();
+    }
+
+    function renderProductModalImage() {
+      const preview = $('#productModalImagePreview');
+      const removeBtn = $('#productModalRemoveImageBtn');
+      if (pendingProductImageData) {
+        preview.innerHTML = `<img src="${pendingProductImageData}" alt="待添加商品图片" />`;
+        removeBtn.classList.remove('hidden');
+      } else {
+        preview.textContent = '完整商品图片预览';
+        removeBtn.classList.add('hidden');
+      }
+    }
+
+    function openProductModal() {
+      pendingProductImageData = '';
+      $('#productModalSku').value = '';
+      $('#productModalAsin').value = '';
+      $('#productModalImageFile').value = '';
+      renderProductModalImage();
+      const modal = $('#productModal');
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden', 'false');
+      requestAnimationFrame(() => $('#productModalSku').focus());
+    }
+
+    function closeProductModal() {
+      const modal = $('#productModal');
+      modal.classList.remove('open');
+      modal.setAttribute('aria-hidden', 'true');
+      pendingProductImageData = '';
+      $('#productModalImageFile').value = '';
+      renderProductModalImage();
+    }
+
+    async function handleNewProductImage(file) {
+      if (!file) return;
+      if (!file.type.startsWith('image/')) return toast('请选择图片文件');
+      try {
+        pendingProductImageData = await compressImage(file);
+        renderProductModalImage();
+      } catch (error) {
+        console.error(error);
+        toast('图片处理失败');
+      }
+    }
+
+    async function saveNewProductFromModal() {
+      const sku = $('#productModalSku').value.trim();
+      const asin = $('#productModalAsin').value.trim().toUpperCase();
+      if (!sku && !asin) {
+        toast('请至少填写 SKU 或 ASIN');
+        $('#productModalSku').focus();
+        return;
+      }
+
       let store = currentStore();
+      let createdStore = false;
       if (!store) {
         store = makeStore(`店铺 ${state.stores.length + 1}`);
         state.stores.push(store);
         state.selectedStoreId = store.id;
+        createdStore = true;
       }
+
       const product = {
         id: uid(),
-        sku: '',
-        asin: '',
+        sku,
+        asin,
         image: '',
         keywords: [],
         negatives: []
       };
+
+      const previousSelectedId = store.selectedId;
       store.products.unshift(product);
       store.selectedId = product.id;
-      saveSoon();
-      render();
-      requestAnimationFrame(() => $('#skuInput')?.focus());
+
+      const saveBtn = $('#productModalSaveBtn');
+      saveBtn.disabled = true;
+      saveBtn.textContent = '保存中…';
+
+      try {
+        await saveCloudNow();
+        if (pendingProductImageData) {
+          await uploadDataImage(product, pendingProductImageData);
+        }
+        closeProductModal();
+        render();
+        toast('商品已保存');
+      } catch (error) {
+        console.error(error);
+        store.products = store.products.filter(item => item.id !== product.id);
+        store.selectedId = previousSelectedId;
+        if (createdStore && store.products.length === 0) {
+          state.stores = state.stores.filter(item => item.id !== store.id);
+          state.selectedStoreId = state.stores[0]?.id || null;
+        }
+        render();
+        toast(error.message || '商品保存失败');
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = '保存商品';
+      }
     }
 
     function selectedProduct() {
@@ -898,6 +1041,25 @@
 
     $('#storeSelect').addEventListener('change', (e) => switchStore(e.target.value));
     $('#addProductBtn').addEventListener('click', newProduct);
+    $('#productModalCloseBtn').addEventListener('click', closeProductModal);
+    $('#productModalCancelBtn').addEventListener('click', closeProductModal);
+    $('#productModalSaveBtn').addEventListener('click', saveNewProductFromModal);
+    $('#productModalChooseImageBtn').addEventListener('click', () => $('#productModalImageFile').click());
+    $('#productModalRemoveImageBtn').addEventListener('click', () => {
+      pendingProductImageData = '';
+      $('#productModalImageFile').value = '';
+      renderProductModalImage();
+    });
+    $('#productModalImageFile').addEventListener('change', (e) => {
+      handleNewProductImage(e.target.files?.[0]);
+      e.target.value = '';
+    });
+    $('#productModal').addEventListener('click', (e) => {
+      if (e.target === $('#productModal')) closeProductModal();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeProductModal();
+    });
     $('#searchInput').addEventListener('input', (e) => {
       state.search = e.target.value.trim();
       renderSidebar();
