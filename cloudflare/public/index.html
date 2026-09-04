@@ -444,8 +444,6 @@
 
   <script>
     const API_BASE = '/api';
-    let stateVersion = '';
-    let lastSyncedStateJson = '';
     let saveChain = Promise.resolve();
     let saveTimer = null;
 
@@ -482,7 +480,7 @@
 
     function cloudStatePayload() {
       return {
-        version: 2,
+        version: 3,
         stores: state.stores.map(store => ({
           id: store.id,
           name: store.name,
@@ -509,55 +507,19 @@
       };
     }
 
-    async function fetchCloudStateSnapshot() {
-      const response = await fetch(`${API_BASE}/state`, {
-        headers: { 'accept': 'application/json' },
-        cache: 'no-store'
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
-      return {
-        data,
-        etag: response.headers.get('etag') || ''
-      };
-    }
-
-    async function performCloudSave(retryOnVersionDrift = true) {
-      const payload = cloudStatePayload();
-      const payloadJson = JSON.stringify(payload);
+    async function performCloudSave() {
       const response = await fetch(`${API_BASE}/state`, {
         method: 'PUT',
         headers: {
           'accept': 'application/json',
-          'content-type': 'application/json',
-          ...(stateVersion ? { 'if-match': stateVersion } : { 'if-none-match': '*' })
+          'content-type': 'application/json'
         },
-        body: payloadJson
+        body: JSON.stringify(cloudStatePayload())
       });
       const data = await response.json().catch(() => ({}));
-
-      if (response.status === 409 && retryOnVersionDrift) {
-        const latest = await fetchCloudStateSnapshot();
-        const latestJson = JSON.stringify({
-          version: 2,
-          stores: Array.isArray(latest.data?.stores) ? latest.data.stores : []
-        });
-
-        if (lastSyncedStateJson && latestJson === lastSyncedStateJson) {
-          stateVersion = latest.etag;
-          return performCloudSave(false);
-        }
-      }
-
       if (!response.ok) {
-        if (response.status === 409) {
-          throw new Error('云端数据确实已被其他页面修改，请刷新后再编辑');
-        }
         throw new Error(data.error || `HTTP ${response.status}`);
       }
-
-      stateVersion = response.headers.get('etag') || stateVersion;
-      lastSyncedStateJson = payloadJson;
       return data;
     }
 
@@ -577,7 +539,7 @@
           await saveCloudNow();
         } catch (error) {
           console.error(error);
-          toast(error.message.includes('authentication') ? '请先通过 Cloudflare Access 登录' : error.message);
+          toast(error.message.includes('authentication') ? '请先通过 Cloudflare Access 登录' : '云端保存失败：' + error.message);
         }
       }, 220);
     }
@@ -1511,13 +1473,12 @@
     async function init() {
       applySavedTheme();
       try {
-        const snapshot = await fetchCloudStateSnapshot();
-        const saved = snapshot.data;
-        stateVersion = snapshot.etag;
-        lastSyncedStateJson = JSON.stringify({
-          version: 2,
-          stores: Array.isArray(saved?.stores) ? saved.stores : []
+        const response = await fetch(`${API_BASE}/state`, {
+          headers: { 'accept': 'application/json' },
+          cache: 'no-store'
         });
+        const saved = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(saved.error || `HTTP ${response.status}`);
         if (saved && Array.isArray(saved.stores)) {
           state.stores = saved.stores.map((store, index) => normalizeStore(store, index));
           state.selectedStoreId = state.stores[0]?.id || null;
