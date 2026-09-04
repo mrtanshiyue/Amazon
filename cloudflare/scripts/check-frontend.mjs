@@ -446,11 +446,34 @@ if (!mainHtml.includes("kids") || !mainHtml.includes("词组")) {
   throw new Error("Negative keyword table or match mode is missing");
 }
 
-vm.runInContext("keywordOverviewFilter = 'confirmed'; renderMain()", context);
+vm.runInContext("keywordOverviewFilter = 'confirmed'; keywordTypeOverviewFilter = 'all'; renderMain()", context);
 mainHtml = elements.get("#main").innerHTML;
 if (!mainHtml.includes("确认关键词") || mainHtml.includes("待观察关键词")) {
   throw new Error("Confirmed keyword table filter failed");
 }
+if (!mainHtml.includes("核心词")) {
+  throw new Error("Core keyword type badge is missing");
+}
+
+vm.runInContext("keywordOverviewFilter = 'all'; keywordTypeOverviewFilter = 'core'; renderMain()", context);
+mainHtml = elements.get("#main").innerHTML;
+if (!mainHtml.includes("Reading Glasses for Women") || !mainHtml.includes("fashion readers") || mainHtml.includes("computer readers")) {
+  throw new Error("Core keyword type filter failed");
+}
+
+vm.runInContext("keywordTypeOverviewFilter = 'longtail'; renderMain()", context);
+mainHtml = elements.get("#main").innerHTML;
+if (!mainHtml.includes("computer readers") || !mainHtml.includes("长尾词") || mainHtml.includes("fashion readers")) {
+  throw new Error("Long-tail keyword type filter failed");
+}
+
+clipboardText = "";
+await vm.runInContext("copyKeywordGroup('watching')", context);
+if (clipboardText !== "computer readers") {
+  throw new Error(`Long-tail filtered copy failed: ${clipboardText}`);
+}
+
+vm.runInContext("keywordTypeOverviewFilter = 'all'", context);
 
 vm.runInContext("keywordOverviewFilter = 'watching'; renderMain()", context);
 mainHtml = elements.get("#main").innerHTML;
@@ -470,4 +493,4 @@ if (mainHtml.includes(">kids<")) {
   throw new Error("Negative exact filter should exclude phrase-only row");
 }
 
-console.log("Frontend UI/runtime smoke test passed: restored overview filters, group copy, three tables, background save, bulk import, verified R2 persistence");
+console.log("Frontend UI/runtime smoke test passed: status/type filters, core/long-tail labels, group copy, background save, bulk import, verified R2 persistence");
