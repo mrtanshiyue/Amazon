@@ -445,6 +445,9 @@
   <script>
     const API_BASE = '/api';
     let stateVersion = '';
+    let lastSyncedStateJson = '';
+    let saveChain = Promise.resolve();
+    let saveTimer = null;
 
     const state = {
       stores: [],
@@ -477,7 +480,51 @@
       return data;
     }
 
-    async function saveCloudNow() {
+    function cloudStatePayload() {
+      return {
+        version: 2,
+        stores: state.stores.map(store => ({
+          id: store.id,
+          name: store.name,
+          products: store.products.map(product => ({
+            id: product.id,
+            sku: product.sku || '',
+            asin: product.asin || '',
+            image: product.image || '',
+            keywords: product.keywords.map(row => ({
+              id: row.id,
+              term: row.term || '',
+              exact: row.exact,
+              phrase: row.phrase,
+              broad: row.broad
+            })),
+            negatives: product.negatives.map(row => ({
+              id: row.id,
+              term: row.term || '',
+              exact: Boolean(row.exact),
+              phrase: Boolean(row.phrase)
+            }))
+          }))
+        }))
+      };
+    }
+
+    async function fetchCloudStateSnapshot() {
+      const response = await fetch(`${API_BASE}/state`, {
+        headers: { 'accept': 'application/json' },
+        cache: 'no-store'
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+      return {
+        data,
+        etag: response.headers.get('etag') || ''
+      };
+    }
+
+    async function performCloudSave(retryOnVersionDrift = true) {
+      const payload = cloudStatePayload();
+      const payloadJson = JSON.stringify(payload);
       const response = await fetch(`${API_BASE}/state`, {
         method: 'PUT',
         headers: {
@@ -485,31 +532,52 @@
           'content-type': 'application/json',
           ...(stateVersion ? { 'if-match': stateVersion } : { 'if-none-match': '*' })
         },
-        body: JSON.stringify({
-          version: 2,
-          stores: state.stores
-        })
+        body: payloadJson
       });
       const data = await response.json().catch(() => ({}));
+
+      if (response.status === 409 && retryOnVersionDrift) {
+        const latest = await fetchCloudStateSnapshot();
+        const latestJson = JSON.stringify({
+          version: 2,
+          stores: Array.isArray(latest.data?.stores) ? latest.data.stores : []
+        });
+
+        if (lastSyncedStateJson && latestJson === lastSyncedStateJson) {
+          stateVersion = latest.etag;
+          return performCloudSave(false);
+        }
+      }
+
       if (!response.ok) {
         if (response.status === 409) {
-          throw new Error('云端数据已被其他设备修改，请刷新页面后重试');
+          throw new Error('云端数据确实已被其他页面修改，请刷新后再编辑');
         }
         throw new Error(data.error || `HTTP ${response.status}`);
       }
+
       stateVersion = response.headers.get('etag') || stateVersion;
+      lastSyncedStateJson = payloadJson;
       return data;
     }
 
-    let saveTimer = null;
+    function saveCloudNow() {
+      clearTimeout(saveTimer);
+      saveTimer = null;
+      const run = () => performCloudSave();
+      saveChain = saveChain.then(run, run);
+      return saveChain;
+    }
+
     function saveSoon() {
       clearTimeout(saveTimer);
       saveTimer = setTimeout(async () => {
+        saveTimer = null;
         try {
           await saveCloudNow();
         } catch (error) {
           console.error(error);
-          toast(error.message.includes('authentication') ? '请先通过 Cloudflare Access 登录' : '云端保存失败');
+          toast(error.message.includes('authentication') ? '请先通过 Cloudflare Access 登录' : error.message);
         }
       }, 220);
     }
@@ -1172,7 +1240,6 @@
     }
 
     async function uploadImageBlob(product, blob) {
-      await saveCloudNow();
       const response = await fetch(`${API_BASE}/products/${encodeURIComponent(product.id)}/image`, {
         method: 'PUT',
         headers: { 'content-type': 'image/jpeg' },
@@ -1444,12 +1511,13 @@
     async function init() {
       applySavedTheme();
       try {
-        const response = await fetch(`${API_BASE}/state`, {
-          headers: { 'accept': 'application/json' }
+        const snapshot = await fetchCloudStateSnapshot();
+        const saved = snapshot.data;
+        stateVersion = snapshot.etag;
+        lastSyncedStateJson = JSON.stringify({
+          version: 2,
+          stores: Array.isArray(saved?.stores) ? saved.stores : []
         });
-        const saved = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(saved.error || `HTTP ${response.status}`);
-        stateVersion = response.headers.get('etag') || '';
         if (saved && Array.isArray(saved.stores)) {
           state.stores = saved.stores.map((store, index) => normalizeStore(store, index));
           state.selectedStoreId = state.stores[0]?.id || null;
