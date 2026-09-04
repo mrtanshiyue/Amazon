@@ -23,7 +23,11 @@ for (const required of [
   'data-negative-filter="phrase"',
   'data-negative-filter="exact"',
   'keyword-overview-line',
-  'keyword-bid-side'
+  'keyword-bid-side',
+  'id="productModalBulkKeywordBtn"',
+  'id="bulkKeywordModal"',
+  'id="bulkKeywordInput"',
+  'id="bulkKeywordImportBtn"'
 ]) {
   if (!html.includes(required)) throw new Error(`Missing UI structure: ${required}`);
 }
@@ -70,6 +74,7 @@ const elements = new Map([
   ["#productModalCancelBtn", new FakeElement()],
   ["#productModalSaveBtn", new FakeElement()],
   ["#productModalDeleteBtn", new FakeElement()],
+  ["#productModalBulkKeywordBtn", new FakeElement()],
   ["#productModalAddKeywordBtn", new FakeElement()],
   ["#productModalAddNegativeBtn", new FakeElement()],
   ["#productModalKeywordEditor", new FakeElement()],
@@ -86,6 +91,11 @@ const elements = new Map([
   ["#storeModalName", new FakeElement()],
   ["#storeModalCancelBtn", new FakeElement()],
   ["#storeModalSaveBtn", new FakeElement()],
+  ["#bulkKeywordModal", new FakeElement()],
+  ["#bulkKeywordInput", new FakeElement()],
+  ["#bulkKeywordCount", new FakeElement()],
+  ["#bulkKeywordCancelBtn", new FakeElement()],
+  ["#bulkKeywordImportBtn", new FakeElement()],
   ["#toast", new FakeElement()]
 ]);
 
@@ -185,6 +195,28 @@ vm.runInContext("addModalKeyword()", context);
 vm.runInContext("productModalDraft.keywords[0].term = 'Reading Glasses for Women'; productModalDraft.keywords[0].exact = 1.25", context);
 const defaultKeywordStatus = vm.runInContext("productModalDraft.keywords[0].status", context);
 if (defaultKeywordStatus !== "watching") throw new Error(`New keyword default status should be watching, got ${defaultKeywordStatus}`);
+
+elements.get("#bulkKeywordInput").value = [
+  "  Blue   Light Readers  ",
+  "computer readers",
+  "",
+  "BLUE LIGHT READERS",
+  "Reading Glasses for Women"
+].join("\n");
+vm.runInContext("importBulkKeywords()", context);
+
+const bulkTerms = vm.runInContext("productModalDraft.keywords.map(row => row.term)", context);
+if (bulkTerms.length !== 3) throw new Error(`Bulk import expected 3 unique total keywords, got ${bulkTerms.length}`);
+if (!bulkTerms.includes("Blue Light Readers") || !bulkTerms.includes("computer readers")) {
+  throw new Error("Bulk import normalization failed");
+}
+const importedStatuses = vm.runInContext(
+  "productModalDraft.keywords.filter(row => row.term !== 'Reading Glasses for Women').map(row => row.status)",
+  context
+);
+if (importedStatuses.some(status => status !== "watching")) {
+  throw new Error("Bulk imported keywords must default to watching");
+}
 vm.runInContext("addModalNegative()", context);
 vm.runInContext("productModalDraft.negatives[0].term = 'kids'; productModalDraft.negatives[0].phrase = true", context);
 
@@ -197,6 +229,14 @@ if (productsAfterSave !== 1) throw new Error(`Save product failed: ${productsAft
 
 const selectedSku = vm.runInContext("selectedProduct().sku", context);
 if (selectedSku !== "YS005") throw new Error(`Selected product mismatch: ${selectedSku}`);
+
+const persistedBulkTerms = cloudState.stores
+  .flatMap(store => store.products || [])
+  .flatMap(product => product.keywords || [])
+  .map(row => row.term);
+if (!persistedBulkTerms.includes("Blue Light Readers") || !persistedBulkTerms.includes("computer readers")) {
+  throw new Error("Bulk imported keywords did not persist to cloud state");
+}
 
 let sidebarHtml = elements.get("#productList").innerHTML;
 if (!sidebarHtml.includes("YS005")) throw new Error("Saved product is missing from left sidebar");
@@ -288,4 +328,4 @@ if (mainHtml.includes(">kids<")) {
   throw new Error("Negative exact filter should exclude phrase-only negative");
 }
 
-console.log("Frontend UI/runtime smoke test passed: right-side Bid layout, keyword/negative filters, term-only selection structure, verified R2 persistence");
+console.log("Frontend UI/runtime smoke test passed: bulk keyword import/dedupe, right-side Bid layout, filters, term-only selection, verified R2 persistence");
