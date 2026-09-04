@@ -168,6 +168,11 @@
     .read-empty{padding:44px 20px;text-align:center;color:var(--text-3);font-size:12px}
     .match-badges{display:flex;gap:5px;flex-wrap:wrap}
     .match-badge{display:inline-flex;align-items:center;border:1px solid var(--border);background:var(--surface-subtle);border-radius:999px;padding:4px 7px;font-size:10px;color:var(--text-2);font-weight:650}
+    .keyword-status{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:4px 8px;font-size:10px;font-weight:760;white-space:nowrap;border:1px solid var(--border)}
+    .keyword-status:before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+    .keyword-status.confirmed{color:var(--success);background:var(--success-soft);border-color:color-mix(in srgb,var(--success) 20%,var(--border))}
+    .keyword-status.watching{color:var(--accent);background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 20%,var(--border))}
+    .keyword-status-select{min-width:106px;height:36px}
     .welcome{min-height:100vh;display:grid;place-items:center;padding:40px}
     .welcome-card{max-width:460px;text-align:center}
     .welcome-mark{width:54px;height:54px;margin:0 auto 14px;border-radius:14px;background:var(--text);color:var(--surface);display:grid;place-items:center;font-size:20px;font-weight:900}
@@ -492,6 +497,7 @@
             keywords: product.keywords.map(row => ({
               id: row.id,
               term: row.term || '',
+              status: row.status === 'confirmed' ? 'confirmed' : 'watching',
               exact: row.exact,
               phrase: row.phrase,
               broad: row.broad
@@ -523,6 +529,7 @@
             keywords: (Array.isArray(product?.keywords) ? product.keywords : []).map(row => ({
               id: String(row?.id || ''),
               term: String(row?.term || '').trim(),
+              status: row?.status === 'confirmed' ? 'confirmed' : 'watching',
               exact: toNumberOrBlank(row?.exact ?? ''),
               phrase: toNumberOrBlank(row?.phrase ?? ''),
               broad: toNumberOrBlank(row?.broad ?? '')
@@ -662,9 +669,13 @@
 
       keywordHost.innerHTML = draft.keywords.length
         ? `<div class="table-wrap"><table>
-            <thead><tr><th>关键词</th><th>Exact Bid</th><th>Phrase Bid</th><th>Broad Bid</th><th></th></tr></thead>
+            <thead><tr><th>关键词</th><th>标签</th><th>Exact Bid</th><th>Phrase Bid</th><th>Broad Bid</th><th></th></tr></thead>
             <tbody>${draft.keywords.map(row => `<tr data-modal-keyword-row="${row.id}">
               <td class="term"><input type="text" data-modal-k-field="term" value="${escapeHtml(row.term)}" placeholder="输入关键词" /></td>
+              <td><select class="keyword-status-select" data-modal-k-field="status">
+                <option value="watching" ${row.status !== 'confirmed' ? 'selected' : ''}>待观察</option>
+                <option value="confirmed" ${row.status === 'confirmed' ? 'selected' : ''}>确认</option>
+              </select></td>
               <td class="bid"><div class="bid-input"><span>$</span><input type="number" min="0" step="0.01" data-modal-k-field="exact" value="${escapeHtml(row.exact)}" placeholder="0.00" /></div></td>
               <td class="bid"><div class="bid-input"><span>$</span><input type="number" min="0" step="0.01" data-modal-k-field="phrase" value="${escapeHtml(row.phrase)}" placeholder="0.00" /></div></td>
               <td class="bid"><div class="bid-input"><span>$</span><input type="number" min="0" step="0.01" data-modal-k-field="broad" value="${escapeHtml(row.broad)}" placeholder="0.00" /></div></td>
@@ -740,7 +751,7 @@
 
     function addModalKeyword() {
       if (!productModalDraft) return;
-      productModalDraft.keywords.push({ id: uid(), term: '', exact: '', phrase: '', broad: '' });
+      productModalDraft.keywords.push({ id: uid(), term: '', status: 'watching', exact: '', phrase: '', broad: '' });
       renderProductModalEditors();
       requestAnimationFrame(() => document.querySelector('[data-modal-keyword-row]:last-child [data-modal-k-field="term"]')?.focus());
     }
@@ -1062,8 +1073,11 @@
           row.phrase !== '' ? `<span class="bid-chip">Phrase $ ${escapeHtml(row.phrase)}</span>` : '',
           row.broad !== '' ? `<span class="bid-chip">Broad $ ${escapeHtml(row.broad)}</span>` : ''
         ].filter(Boolean).join('');
+        const status = row.status === 'confirmed'
+          ? '<span class="keyword-status confirmed">确认</span>'
+          : '<span class="keyword-status watching">待观察</span>';
         return `<div class="preview-row">
-          <div class="preview-term">${escapeHtml(row.term || '未命名关键词')}</div>
+          <div class="preview-term">${escapeHtml(row.term || '未命名关键词')} ${status}</div>
           <div class="preview-bids">${chips || '<span class="bid-chip">未设置 Bid</span>'}</div>
         </div>`;
       }).join('');
@@ -1187,9 +1201,12 @@
         return '<div class="read-empty">暂无关键词</div>';
       }
       return `<div class="table-wrap"><table class="read-table">
-        <thead><tr><th>关键词</th><th>Exact Bid</th><th>Phrase Bid</th><th>Broad Bid</th></tr></thead>
+        <thead><tr><th>关键词</th><th>标签</th><th>Exact Bid</th><th>Phrase Bid</th><th>Broad Bid</th></tr></thead>
         <tbody>${product.keywords.map(row => `<tr>
           <td>${escapeHtml(row.term || '—')}</td>
+          <td>${row.status === 'confirmed'
+            ? '<span class="keyword-status confirmed">确认</span>'
+            : '<span class="keyword-status watching">待观察</span>'}</td>
           <td class="money">${row.exact === '' ? '—' : '$ ' + escapeHtml(row.exact)}</td>
           <td class="money">${row.phrase === '' ? '—' : '$ ' + escapeHtml(row.phrase)}</td>
           <td class="money">${row.broad === '' ? '—' : '$ ' + escapeHtml(row.broad)}</td>
@@ -1432,6 +1449,7 @@
         keywords: Array.isArray(raw?.keywords) ? raw.keywords.map(k => ({
           id: typeof k?.id === 'string' ? k.id : uid(),
           term: typeof k?.term === 'string' ? k.term : '',
+          status: k?.status === 'confirmed' ? 'confirmed' : 'watching',
           exact: toNumberOrBlank(k?.exact ?? ''),
           phrase: toNumberOrBlank(k?.phrase ?? ''),
           broad: toNumberOrBlank(k?.broad ?? '')
@@ -1525,7 +1543,9 @@
         const row = productModalDraft.keywords.find(item => item.id === keywordRow.dataset.modalKeywordRow);
         if (row) {
           const field = e.target.dataset.modalKField;
-          row[field] = field === 'term' ? e.target.value : toNumberOrBlank(e.target.value);
+          row[field] = field === 'term' || field === 'status'
+            ? e.target.value
+            : toNumberOrBlank(e.target.value);
         }
       }
       const negativeRow = e.target.closest('[data-modal-negative-row]');
@@ -1536,6 +1556,11 @@
     });
     $('#productModal').addEventListener('change', (e) => {
       if (!productModalDraft) return;
+      const keywordRow = e.target.closest('[data-modal-keyword-row]');
+      if (keywordRow && e.target.dataset.modalKField === 'status') {
+        const row = productModalDraft.keywords.find(item => item.id === keywordRow.dataset.modalKeywordRow);
+        if (row) row.status = e.target.value === 'confirmed' ? 'confirmed' : 'watching';
+      }
       const negativeRow = e.target.closest('[data-modal-negative-row]');
       if (negativeRow && e.target.dataset.modalNField && e.target.dataset.modalNField !== 'term') {
         const row = productModalDraft.negatives.find(item => item.id === negativeRow.dataset.modalNegativeRow);
