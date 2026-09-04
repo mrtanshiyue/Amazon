@@ -61,7 +61,7 @@ async function handleApi(request, env, url) {
 async function readState(env) {
   const object = await env.STORAGE.get(STATE_KEY);
   if (!object) {
-    const response = json({ version: 2, stores: [] });
+    const response = json({ version: 3, stores: [] });
     response.headers.set("etag", "");
     return response;
   }
@@ -95,29 +95,15 @@ async function saveState(request, env) {
   const validated = validateState(payload);
   if (!validated.ok) return json({ error: validated.error }, 400);
 
-  const current = await env.STORAGE.head(STATE_KEY);
-  const ifMatch = request.headers.get("if-match");
-  const ifNoneMatch = request.headers.get("if-none-match");
-
-  if (current && !ifMatch) {
-    return json({ error: "State version required" }, 409);
-  }
-  if (!current && ifNoneMatch !== "*") {
-    return json({ error: "Initial state precondition required" }, 409);
-  }
-
-  const conditionalHeaders = new Headers();
-  if (current) {
-    conditionalHeaders.set("if-match", ifMatch);
-  } else {
-    conditionalHeaders.set("if-none-match", "*");
-  }
-
+  const updatedAt = new Date().toISOString();
   const stored = await env.STORAGE.put(
     STATE_KEY,
-    JSON.stringify({ version: 2, stores: validated.stores }),
+    JSON.stringify({
+      version: 3,
+      updatedAt,
+      stores: validated.stores
+    }),
     {
-      onlyIf: conditionalHeaders,
       httpMetadata: {
         contentType: "application/json; charset=utf-8",
         cacheControl: "private, no-store"
@@ -126,12 +112,10 @@ async function saveState(request, env) {
   );
 
   if (!stored) {
-    return json({ error: "State changed on another device. Reload before saving." }, 409);
+    return json({ error: "Failed to save state" }, 500);
   }
 
-  const response = json({ ok: true });
-  response.headers.set("etag", stored.httpEtag);
-  return response;
+  return json({ ok: true, updatedAt });
 }
 
 function validateState(payload) {
