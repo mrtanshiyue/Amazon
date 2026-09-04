@@ -14,7 +14,7 @@ class FakeElement {
     this.textContent = "";
     this.disabled = false;
     this.attributes = {};
-    this.classList = { add() {}, remove() {} };
+    this.classList = { add() {}, remove() {}, toggle() {} };
   }
   addEventListener() {}
   setAttribute(name, value) { this.attributes[name] = String(value); }
@@ -25,6 +25,7 @@ class FakeElement {
 const elements = new Map([
   ["#storeSelect", new FakeElement()],
   ["#addProductBtn", new FakeElement()],
+  ["#editProductBtn", new FakeElement()],
   ["#searchInput", new FakeElement()],
   ["#productList", new FakeElement()],
   ["#main", new FakeElement()],
@@ -33,9 +34,15 @@ const elements = new Map([
   ["#importFile", new FakeElement()],
   ["#imageFile", new FakeElement()],
   ["#productModal", new FakeElement()],
+  ["#productModalTitle", new FakeElement()],
   ["#productModalCloseBtn", new FakeElement()],
   ["#productModalCancelBtn", new FakeElement()],
   ["#productModalSaveBtn", new FakeElement()],
+  ["#productModalDeleteBtn", new FakeElement()],
+  ["#productModalAddKeywordBtn", new FakeElement()],
+  ["#productModalAddNegativeBtn", new FakeElement()],
+  ["#productModalKeywordEditor", new FakeElement()],
+  ["#productModalNegativeEditor", new FakeElement()],
   ["#productModalChooseImageBtn", new FakeElement()],
   ["#productModalRemoveImageBtn", new FakeElement()],
   ["#productModalImageFile", new FakeElement()],
@@ -122,9 +129,14 @@ vm.runInContext("newProduct()", context);
 const productsBeforeSave = vm.runInContext("currentStore().products.length", context);
 if (productsBeforeSave !== 0) throw new Error(`Modal should not create product before save: ${productsBeforeSave}`);
 
+vm.runInContext("addModalKeyword()", context);
+vm.runInContext("productModalDraft.keywords[0].term = 'Reading Glasses for Women'; productModalDraft.keywords[0].exact = 1.25", context);
+vm.runInContext("addModalNegative()", context);
+vm.runInContext("productModalDraft.negatives[0].term = 'kids'; productModalDraft.negatives[0].phrase = true", context);
+
 elements.get("#productModalSku").value = "YS005";
 elements.get("#productModalAsin").value = "B0TEST1234";
-await vm.runInContext("saveNewProductFromModal()", context);
+await vm.runInContext("saveProductFromModal()", context);
 
 const productsAfterSave = vm.runInContext("currentStore().products.length", context);
 if (productsAfterSave !== 1) throw new Error(`Save product failed: ${productsAfterSave}`);
@@ -132,12 +144,31 @@ if (productsAfterSave !== 1) throw new Error(`Save product failed: ${productsAft
 const selectedSku = vm.runInContext("selectedProduct().sku", context);
 if (selectedSku !== "YS005") throw new Error(`Selected product mismatch: ${selectedSku}`);
 
-const sidebarHtml = elements.get("#productList").innerHTML;
+let sidebarHtml = elements.get("#productList").innerHTML;
 if (!sidebarHtml.includes("YS005")) throw new Error("Saved product is missing from left sidebar");
 
-const mainHtml = elements.get("#main").innerHTML;
+let mainHtml = elements.get("#main").innerHTML;
 if (!mainHtml.includes("YS005") || !mainHtml.includes("B0TEST1234")) {
   throw new Error("Selected product data is missing from right panel");
 }
+if (!mainHtml.includes("Reading Glasses for Women") || !mainHtml.includes("kids")) {
+  throw new Error("Keyword or negative keyword missing from right read-only panel");
+}
+if (mainHtml.includes("<input") || mainHtml.includes("添加关键词") || mainHtml.includes("添加否定词")) {
+  throw new Error("Right panel must be read-only");
+}
 
-console.log("Frontend runtime smoke test passed: modal open, save product, sidebar selection, right panel display");
+vm.runInContext("editCurrentProduct()", context);
+elements.get("#productModalSku").value = "YS005-EDIT";
+vm.runInContext("productModalDraft.keywords[0].phrase = 1.35", context);
+await vm.runInContext("saveProductFromModal()", context);
+
+const editedSku = vm.runInContext("selectedProduct().sku", context);
+if (editedSku !== "YS005-EDIT") throw new Error(`Edit product failed: ${editedSku}`);
+
+mainHtml = elements.get("#main").innerHTML;
+if (!mainHtml.includes("YS005-EDIT") || !mainHtml.includes("$ 1.35")) {
+  throw new Error("Edited product is not reflected in read-only detail panel");
+}
+
+console.log("Frontend runtime smoke test passed: create/edit modal, keyword editing, sidebar selection, read-only right panel");
