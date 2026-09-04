@@ -918,7 +918,30 @@
       if (!response.ok) throw new Error(data.error || '图片删除失败');
     }
 
-    async function saveProductFromModal() {
+    async function wait(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function runBackgroundProductSync(task) {
+      void (async () => {
+        let lastError;
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            await task();
+            render();
+            toast('已同步到云端');
+            return;
+          } catch (error) {
+            lastError = error;
+            console.error(`Background sync attempt ${attempt} failed`, error);
+            if (attempt < 3) await wait(attempt * 700);
+          }
+        }
+        toast('后台同步失败：' + (lastError?.message || '请稍后再次保存'));
+      })();
+    }
+
+    function saveProductFromModal() {
       if (!productModalDraft) return;
       productModalDraft.sku = $('#productModalSku').value.trim();
       productModalDraft.asin = $('#productModalAsin').value.trim().toUpperCase();
@@ -930,86 +953,57 @@
       }
 
       let store = currentStore();
-      let createdStore = false;
       if (!store) {
         store = makeStore(`店铺 ${state.stores.length + 1}`);
         state.stores.push(store);
         state.selectedStoreId = store.id;
-        createdStore = true;
       }
 
-      const saveBtn = $('#productModalSaveBtn');
-      saveBtn.disabled = true;
-      saveBtn.textContent = '保存中…';
+      const imageData = pendingProductImageData;
+      const removeImage = pendingRemoveProductImage;
 
       if (productModalMode === 'create') {
         const product = cloneProductForModal(productModalDraft);
         product.image = '';
-        const previousSelectedId = store.selectedId;
         store.products.unshift(product);
         store.selectedId = product.id;
 
-        try {
+        closeProductModal();
+        render();
+        toast('正在后台保存…');
+
+        runBackgroundProductSync(async () => {
           await saveCloudNow();
-          if (pendingProductImageData) {
-            await uploadDataImage(product, pendingProductImageData);
+          if (imageData) {
+            await uploadDataImage(product, imageData);
           }
-          closeProductModal();
-          render();
-          toast('商品已保存');
-        } catch (error) {
-          console.error(error);
-          store.products = store.products.filter(item => item.id !== product.id);
-          store.selectedId = previousSelectedId;
-          if (createdStore && store.products.length === 0) {
-            state.stores = state.stores.filter(item => item.id !== store.id);
-            state.selectedStoreId = state.stores[0]?.id || null;
-          }
-          render();
-          toast(error.message || '商品保存失败');
-        } finally {
-          saveBtn.disabled = false;
-          saveBtn.textContent = '保存商品';
-        }
+        });
         return;
       }
 
       const product = selectedProduct();
-      if (!product) {
-        saveBtn.disabled = false;
-        saveBtn.textContent = '保存商品';
-        return toast('当前商品不存在');
-      }
+      if (!product) return toast('当前商品不存在');
 
-      const backup = cloneProductForModal(product);
-      try {
-        product.sku = productModalDraft.sku;
-        product.asin = productModalDraft.asin;
-        product.keywords = productModalDraft.keywords.map(row => ({ ...row }));
-        product.negatives = productModalDraft.negatives.map(row => ({ ...row }));
-        if (pendingRemoveProductImage) product.image = '';
+      const previousImage = product.image;
+      product.sku = productModalDraft.sku;
+      product.asin = productModalDraft.asin;
+      product.keywords = productModalDraft.keywords.map(row => ({ ...row }));
+      product.negatives = productModalDraft.negatives.map(row => ({ ...row }));
+      if (removeImage) product.image = '';
 
+      closeProductModal();
+      render();
+      toast('正在后台保存…');
+
+      runBackgroundProductSync(async () => {
         await saveCloudNow();
-
-        if (pendingRemoveProductImage && backup.image) {
+        if (removeImage && previousImage) {
           await deleteProductImageById(product.id);
         }
-        if (pendingProductImageData) {
-          await uploadDataImage(product, pendingProductImageData);
+        if (imageData) {
+          await uploadDataImage(product, imageData);
         }
-
-        closeProductModal();
-        render();
-        toast('商品修改已保存');
-      } catch (error) {
-        console.error(error);
-        Object.assign(product, backup);
-        render();
-        toast(error.message || '商品保存失败');
-      } finally {
-        saveBtn.disabled = false;
-        saveBtn.textContent = '保存商品';
-      }
+      });
     }
 
     function selectedProduct() {
