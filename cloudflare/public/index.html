@@ -110,7 +110,7 @@
     .empty strong{display:block;color:var(--text-2);font-size:12px;margin-bottom:3px}
     .sidebar-footer{border-top:1px solid var(--border);padding:9px 10px;display:grid;grid-template-columns:1fr 1fr 36px;gap:5px;flex:0 0 auto}
     .workspace{min-width:0;min-height:100vh}
-    .workspace-inner{width:min(1180px,100%);margin:0 auto;padding:0 28px 40px}
+    .workspace-inner{width:100%;margin:0;padding:0 24px 40px}
     .workspace-header{min-height:78px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 0 14px;border-bottom:1px solid var(--border)}
     .breadcrumb{font-size:10.5px;color:var(--text-3);margin-bottom:4px}
     .workspace-title{font-size:23px;line-height:1.05;font-weight:820;letter-spacing:-.04em;margin:0}
@@ -124,23 +124,20 @@
     .view-tab.active:after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--text);border-radius:2px 2px 0 0}
     .tab-count{font-size:9.5px;color:var(--text-3);background:var(--surface-hover);padding:2px 5px;border-radius:999px;margin-left:4px}
     .content-view{padding-top:20px}
-    .overview-layout{display:grid;grid-template-columns:280px minmax(0,1fr);gap:20px;align-items:start}
-    .product-visual{border:1px solid var(--border);background:var(--surface);border-radius:12px;padding:11px;height:fit-content}
-    .product-image{width:100%;min-height:220px;max-height:520px;background:var(--surface-subtle);border-radius:9px;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:8px}
-    .product-image img{display:block;width:100%;height:auto;max-height:500px;object-fit:contain}
+    .overview-layout{display:grid;grid-template-columns:320px minmax(0,1fr);gap:22px;align-items:start;width:100%}
+    .product-visual{border:1px solid var(--border);background:var(--surface);border-radius:12px;padding:12px;height:fit-content}
+    .product-image{width:100%;min-height:260px;max-height:560px;background:var(--surface-subtle);border-radius:9px;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:8px}
+    .product-image img{display:block;width:100%;height:auto;max-height:540px;object-fit:contain}
     .image-empty{color:var(--text-3);font-size:11px;text-align:center;padding:20px}
-    .visual-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px}
-    .visual-actions .btn{text-decoration:none}
-    .visual-meta{display:grid;gap:7px;margin-top:10px}
-    .visual-meta-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:10.5px;color:var(--text-3)}
-    .visual-meta-row strong{color:var(--text-2);font-weight:700;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .overview-main{min-width:0;display:grid;gap:12px}
+    .overview-detail-grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(320px,.9fr);gap:12px;align-items:stretch}
+    .overview-detail-grid .overview-card{height:100%}
     .overview-card{border:1px solid var(--border);background:var(--surface);border-radius:12px;padding:15px}
     .overview-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
     .overview-heading{font-size:14.5px;font-weight:800;letter-spacing:-.015em;margin:0}
     .overview-link{border:0;background:transparent;color:var(--accent);font-size:11px;font-weight:700;padding:0}
     .overview-link:hover{text-decoration:underline}
-    .field-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+    .field-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
     .readonly-field{border:1px solid var(--border);background:var(--surface-subtle);border-radius:9px;padding:10px 11px}
     .readonly-label{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);margin-bottom:5px}
     .readonly-value{font-size:12.5px;font-weight:700;word-break:break-word}
@@ -220,12 +217,17 @@
     .mini-dialog-footer{border-top:1px solid var(--border);padding:12px 14px;display:flex;justify-content:flex-end;gap:7px}
     .toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,12px);background:var(--text);color:var(--surface);padding:9px 13px;border-radius:999px;font-size:11.5px;opacity:0;pointer-events:none;transition:.18s;z-index:200;box-shadow:var(--shadow)}
     .toast.show{opacity:1;transform:translate(-50%,0)}
-    @media(max-width:1040px){
+    @media(max-width:1280px){
       .app-shell{grid-template-columns:238px minmax(0,1fr)}
       .workspace-inner{padding:0 18px 30px}
-      .overview-layout{grid-template-columns:1fr}
-      .product-visual{width:min(360px,100%)}
+      .overview-layout{grid-template-columns:280px minmax(0,1fr)}
+      .field-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .overview-detail-grid{grid-template-columns:1fr}
       .editor-shell{grid-template-columns:154px minmax(0,1fr)}
+    }
+    @media(max-width:980px){
+      .overview-layout{grid-template-columns:1fr}
+      .product-visual{width:min(380px,100%)}
     }
     @media(max-width:720px){
       .app-shell{display:block}
@@ -242,6 +244,7 @@
       .product-visual{width:100%}
       .product-image{min-height:180px;max-height:420px}
       .field-grid{grid-template-columns:1fr 1fr}
+      .overview-detail-grid{grid-template-columns:1fr}
       .metric-grid{grid-template-columns:repeat(3,1fr)}
       .preview-row{grid-template-columns:1fr}
       .preview-bids{justify-content:flex-start}
@@ -951,16 +954,6 @@
         <div class="overview-layout">
           <aside class="product-visual">
             <div class="product-image">${imageContent}</div>
-            <div class="visual-actions">
-              <button class="btn small" type="button" data-overview-action="edit">编辑商品</button>
-              ${product.image
-                ? `<a class="btn small" href="${product.image}" target="_blank" rel="noopener">查看原图</a>`
-                : '<button class="btn small" type="button" disabled>查看原图</button>'}
-            </div>
-            <div class="visual-meta">
-              <div class="visual-meta-row"><span>SKU</span><strong>${escapeHtml(product.sku || '—')}</strong></div>
-              <div class="visual-meta-row"><span>ASIN</span><strong>${escapeHtml(product.asin || '—')}</strong></div>
-            </div>
           </aside>
 
           <div class="overview-main">
@@ -994,27 +987,29 @@
               <div class="metric"><div class="metric-label">已设置 Bid</div><div class="metric-value">${countBids(product)}</div></div>
             </div>
 
-            <section class="overview-card">
-              <div class="overview-card-head">
-                <div>
-                  <h3 class="overview-heading">关键词预览</h3>
+            <div class="overview-detail-grid">
+              <section class="overview-card">
+                <div class="overview-card-head">
+                  <div>
+                    <h3 class="overview-heading">关键词预览</h3>
+                  </div>
+                  <button class="overview-link" data-main-view="keywords">查看全部</button>
                 </div>
-                <button class="overview-link" data-main-view="keywords">查看全部</button>
-              </div>
-              ${keywordPreview || '<div class="preview-empty">当前商品还没有关键词</div>'}
-            </section>
+                ${keywordPreview || '<div class="preview-empty">当前商品还没有关键词</div>'}
+              </section>
 
-            <section class="overview-card">
-              <div class="overview-card-head">
-                <h3 class="overview-heading">否定词摘要</h3>
-                <button class="overview-link" data-main-view="negatives">查看全部</button>
-              </div>
-              <div class="metric-grid">
-                <div class="metric"><div class="metric-label">Negative Exact</div><div class="metric-value">${product.negatives.filter(row => row.exact).length}</div></div>
-                <div class="metric"><div class="metric-label">Negative Phrase</div><div class="metric-value">${product.negatives.filter(row => row.phrase).length}</div></div>
-                <div class="metric"><div class="metric-label">总否定词</div><div class="metric-value">${product.negatives.length}</div></div>
-              </div>
-            </section>
+              <section class="overview-card">
+                <div class="overview-card-head">
+                  <h3 class="overview-heading">否定词摘要</h3>
+                  <button class="overview-link" data-main-view="negatives">查看全部</button>
+                </div>
+                <div class="metric-grid">
+                  <div class="metric"><div class="metric-label">Negative Exact</div><div class="metric-value">${product.negatives.filter(row => row.exact).length}</div></div>
+                  <div class="metric"><div class="metric-label">Negative Phrase</div><div class="metric-value">${product.negatives.filter(row => row.phrase).length}</div></div>
+                  <div class="metric"><div class="metric-label">总否定词</div><div class="metric-value">${product.negatives.length}</div></div>
+                </div>
+              </section>
+            </div>
           </div>
         </div>
       </div>`;
@@ -1333,12 +1328,6 @@
       const viewButton = event.target.closest('[data-main-view]');
       if (viewButton) {
         setMainView(viewButton.dataset.mainView);
-        return;
-      }
-
-      const overviewAction = event.target.closest('[data-overview-action]');
-      if (overviewAction?.dataset.overviewAction === 'edit') {
-        editCurrentProduct();
         return;
       }
 
