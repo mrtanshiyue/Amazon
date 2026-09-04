@@ -239,6 +239,14 @@
     .bulk-textarea{width:100%;min-height:300px;resize:vertical;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:10px;padding:12px;outline:none;font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace}
     .bulk-textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 12%,transparent)}
     .bulk-import-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:9px;color:var(--text-3);font-size:10.5px}
+    .bulk-status-block{margin-bottom:12px}
+    .bulk-status-label{font-size:9.5px;font-weight:850;text-transform:uppercase;letter-spacing:.075em;color:var(--text-3);margin-bottom:7px}
+    .bulk-status-options{display:flex;gap:7px}
+    .bulk-status-option{position:relative}
+    .bulk-status-option input{position:absolute;opacity:0;pointer-events:none}
+    .bulk-status-option span{height:32px;min-width:78px;border:1px solid var(--border);background:var(--surface-subtle);border-radius:999px;padding:0 12px;display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:11px;font-weight:760;cursor:pointer;user-select:none;-webkit-user-select:none}
+    .bulk-status-option input:checked + span{background:var(--text);color:var(--surface);border-color:var(--text)}
+    .bulk-status-option span:before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
     .editor-head-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
     .toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,12px);background:var(--text);color:var(--surface);padding:9px 13px;border-radius:999px;font-size:11.5px;opacity:0;pointer-events:none;transition:.18s;z-index:200;box-shadow:var(--shadow)}
     .toast.show{opacity:1;transform:translate(-50%,0)}
@@ -475,9 +483,22 @@
       <div class="mini-dialog-body">
         <div class="mini-dialog-title" id="bulkKeywordTitle">批量导入关键词</div>
         <div class="mini-dialog-sub">一行一个关键词。系统会自动去除空行、合并多余空格，并跳过当前商品中已存在的关键词。</div>
+        <div class="bulk-status-block">
+          <div class="bulk-status-label">导入标签</div>
+          <div class="bulk-status-options">
+            <label class="bulk-status-option">
+              <input type="radio" name="bulkKeywordStatus" value="watching" checked />
+              <span>待观察</span>
+            </label>
+            <label class="bulk-status-option">
+              <input type="radio" name="bulkKeywordStatus" value="confirmed" />
+              <span>确认</span>
+            </label>
+          </div>
+        </div>
         <textarea class="bulk-textarea" id="bulkKeywordInput" placeholder="reading glasses for women&#10;blue light readers&#10;computer readers"></textarea>
         <div class="bulk-import-meta">
-          <span>新导入关键词默认：待观察 · Bid 留空</span>
+          <span>Bid 默认留空；已存在关键词不会被修改</span>
           <span id="bulkKeywordCount">0 行</span>
         </div>
       </div>
@@ -817,6 +838,8 @@
     function openBulkKeywordModal() {
       if (!productModalDraft) return;
       $('#bulkKeywordInput').value = '';
+      const defaultStatus = document.querySelector('input[name="bulkKeywordStatus"][value="watching"]');
+      if (defaultStatus) defaultStatus.checked = true;
       updateBulkKeywordCount();
       const modal = $('#bulkKeywordModal');
       modal.classList.add('open');
@@ -843,6 +866,10 @@
           .filter(Boolean)
       );
 
+      const selectedStatus = document.querySelector('input[name="bulkKeywordStatus"]:checked')?.value === 'confirmed'
+        ? 'confirmed'
+        : 'watching';
+
       let added = 0;
       let skipped = 0;
       for (const term of parsed) {
@@ -855,7 +882,7 @@
         productModalDraft.keywords.push({
           id: uid(),
           term,
-          status: 'watching',
+          status: selectedStatus,
           exact: '',
           phrase: '',
           broad: ''
