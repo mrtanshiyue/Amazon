@@ -235,6 +235,11 @@
     .mini-dialog-title{font-size:16px;font-weight:820;margin-bottom:4px}
     .mini-dialog-sub{font-size:11px;color:var(--text-3);margin-bottom:16px;line-height:1.55}
     .mini-dialog-footer{border-top:1px solid var(--border);padding:12px 14px;display:flex;justify-content:flex-end;gap:7px}
+    .bulk-dialog{width:min(620px,100%)}
+    .bulk-textarea{width:100%;min-height:300px;resize:vertical;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:10px;padding:12px;outline:none;font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace}
+    .bulk-textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 12%,transparent)}
+    .bulk-import-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:9px;color:var(--text-3);font-size:10.5px}
+    .editor-head-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
     .toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,12px);background:var(--text);color:var(--surface);padding:9px 13px;border-radius:999px;font-size:11.5px;opacity:0;pointer-events:none;transition:.18s;z-index:200;box-shadow:var(--shadow)}
     .toast.show{opacity:1;transform:translate(-50%,0)}
     @media(max-width:1280px){
@@ -416,7 +421,10 @@
                 <div class="editor-section-title">关键词与出价</div>
                 <div class="editor-section-sub">每个词分别维护 Exact / Phrase / Broad Bid</div>
               </div>
-              <button class="btn accent small" id="productModalAddKeywordBtn" type="button">＋ 添加关键词</button>
+              <div class="editor-head-actions">
+                <button class="btn small" id="productModalBulkKeywordBtn" type="button">批量导入</button>
+                <button class="btn accent small" id="productModalAddKeywordBtn" type="button">＋ 添加关键词</button>
+              </div>
             </div>
             <div id="productModalKeywordEditor"></div>
           </section>
@@ -458,6 +466,24 @@
       <div class="mini-dialog-footer">
         <button class="btn" id="storeModalCancelBtn" type="button">取消</button>
         <button class="btn accent" id="storeModalSaveBtn" type="button">保存</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="dialog-backdrop" id="bulkKeywordModal" aria-hidden="true">
+    <section class="mini-dialog bulk-dialog" role="dialog" aria-modal="true" aria-labelledby="bulkKeywordTitle">
+      <div class="mini-dialog-body">
+        <div class="mini-dialog-title" id="bulkKeywordTitle">批量导入关键词</div>
+        <div class="mini-dialog-sub">一行一个关键词。系统会自动去除空行、合并多余空格，并跳过当前商品中已存在的关键词。</div>
+        <textarea class="bulk-textarea" id="bulkKeywordInput" placeholder="reading glasses for women&#10;blue light readers&#10;computer readers"></textarea>
+        <div class="bulk-import-meta">
+          <span>新导入关键词默认：待观察 · Bid 留空</span>
+          <span id="bulkKeywordCount">0 行</span>
+        </div>
+      </div>
+      <div class="mini-dialog-footer">
+        <button class="btn" id="bulkKeywordCancelBtn" type="button">取消</button>
+        <button class="btn accent" id="bulkKeywordImportBtn" type="button">导入关键词</button>
       </div>
     </section>
   </div>
@@ -766,6 +792,80 @@
         console.error(error);
         toast('图片处理失败');
       }
+    }
+
+    function parseBulkKeywords(text) {
+      const seen = new Set();
+      const result = [];
+      for (const rawLine of String(text || '').split(/\r?\n/)) {
+        const term = rawLine.replace(/\s+/g, ' ').trim();
+        if (!term) continue;
+        const key = term.toLocaleLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        result.push(term);
+        if (result.length >= 5000) break;
+      }
+      return result;
+    }
+
+    function updateBulkKeywordCount() {
+      const count = parseBulkKeywords($('#bulkKeywordInput').value).length;
+      $('#bulkKeywordCount').textContent = `${count} 行`;
+    }
+
+    function openBulkKeywordModal() {
+      if (!productModalDraft) return;
+      $('#bulkKeywordInput').value = '';
+      updateBulkKeywordCount();
+      const modal = $('#bulkKeywordModal');
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden', 'false');
+      requestAnimationFrame(() => $('#bulkKeywordInput').focus());
+    }
+
+    function closeBulkKeywordModal() {
+      const modal = $('#bulkKeywordModal');
+      modal.classList.remove('open');
+      modal.setAttribute('aria-hidden', 'true');
+      $('#bulkKeywordInput').value = '';
+      updateBulkKeywordCount();
+    }
+
+    function importBulkKeywords() {
+      if (!productModalDraft) return;
+      const parsed = parseBulkKeywords($('#bulkKeywordInput').value);
+      if (!parsed.length) return toast('没有可导入的关键词');
+
+      const existing = new Set(
+        productModalDraft.keywords
+          .map(row => String(row.term || '').replace(/\s+/g, ' ').trim().toLocaleLowerCase())
+          .filter(Boolean)
+      );
+
+      let added = 0;
+      let skipped = 0;
+      for (const term of parsed) {
+        const key = term.toLocaleLowerCase();
+        if (existing.has(key)) {
+          skipped++;
+          continue;
+        }
+        existing.add(key);
+        productModalDraft.keywords.push({
+          id: uid(),
+          term,
+          status: 'watching',
+          exact: '',
+          phrase: '',
+          broad: ''
+        });
+        added++;
+      }
+
+      renderProductModalEditors();
+      closeBulkKeywordModal();
+      toast(skipped ? `已导入 ${added} 个，跳过重复 ${skipped} 个` : `已导入 ${added} 个关键词`);
     }
 
     function addModalKeyword() {
@@ -1614,9 +1714,17 @@
       if (e.key === 'Enter') saveStoreModal();
     });
 
+    $('#bulkKeywordCancelBtn').addEventListener('click', closeBulkKeywordModal);
+    $('#bulkKeywordImportBtn').addEventListener('click', importBulkKeywords);
+    $('#bulkKeywordInput').addEventListener('input', updateBulkKeywordCount);
+    $('#bulkKeywordModal').addEventListener('click', (e) => {
+      if (e.target === $('#bulkKeywordModal')) closeBulkKeywordModal();
+    });
+
     $('#productModalCloseBtn').addEventListener('click', closeProductModal);
     $('#productModalCancelBtn').addEventListener('click', closeProductModal);
     $('#productModalSaveBtn').addEventListener('click', saveProductFromModal);
+    $('#productModalBulkKeywordBtn').addEventListener('click', openBulkKeywordModal);
     $('#productModalAddKeywordBtn').addEventListener('click', addModalKeyword);
     $('#productModalAddNegativeBtn').addEventListener('click', addModalNegative);
     $('#productModalDeleteBtn').addEventListener('click', () => {
@@ -1685,6 +1793,7 @@
       if (e.key === 'Escape') {
         closeProductModal();
         closeStoreModal();
+        closeBulkKeywordModal();
       }
     });
     $('#searchInput').addEventListener('input', (e) => {
