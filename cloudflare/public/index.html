@@ -184,6 +184,7 @@
 
   <script>
     const API_BASE = '/api';
+    let stateVersion = '';
 
     async function apiJson(path, options = {}) {
       const response = await fetch(`${API_BASE}${path}`, {
@@ -200,14 +201,27 @@
     }
 
     async function saveCloudNow() {
-      await apiJson('/state', {
+      const response = await fetch(`${API_BASE}/state`, {
         method: 'PUT',
+        headers: {
+          'accept': 'application/json',
+          'content-type': 'application/json',
+          ...(stateVersion ? { 'if-match': stateVersion } : { 'if-none-match': '*' })
+        },
         body: JSON.stringify({
           version: 2,
-          selectedStoreId: state.selectedStoreId,
           stores: state.stores
         })
       });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        if (response.status === 409) {
+          throw new Error('云端数据已被其他设备修改，请刷新页面后重试');
+        }
+        throw new Error(data.error || `HTTP ${response.status}`);
+      }
+      stateVersion = response.headers.get('etag') || stateVersion;
+      return data;
     }
 
     let saveTimer = null;
@@ -282,7 +296,6 @@
       state.selectedStoreId = store.id;
       state.search = '';
       $('#searchInput').value = '';
-      saveSoon();
       render();
       toast('店铺已创建');
     }
@@ -317,7 +330,6 @@
       state.selectedStoreId = storeId;
       state.search = '';
       $('#searchInput').value = '';
-      saveSoon();
       render();
     }
 
@@ -653,6 +665,7 @@
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || '图片上传失败');
       product.image = data.url;
+      await saveCloudNow();
     }
 
     async function uploadDataImage(product, dataUrl) {
@@ -687,6 +700,7 @@
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(data.error || '图片删除失败');
         product.image = '';
+        await saveCloudNow();
         render();
         toast('R2 图片已删除');
       } catch (error) {
@@ -835,7 +849,6 @@
       if (productButton) {
         const store = currentStore();
         if (store) store.selectedId = productButton.dataset.selectProduct;
-        saveSoon();
         render();
         return;
       }
@@ -887,7 +900,12 @@
     async function init() {
       applySavedTheme();
       try {
-        const saved = await apiJson('/state');
+        const response = await fetch(`${API_BASE}/state`, {
+          headers: { 'accept': 'application/json' }
+        });
+        const saved = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(saved.error || `HTTP ${response.status}`);
+        stateVersion = response.headers.get('etag') || '';
         if (saved && Array.isArray(saved.stores)) {
           state.stores = saved.stores.map((store, index) => normalizeStore(store, index));
           state.selectedStoreId = state.stores[0]?.id || null;
