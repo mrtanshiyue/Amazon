@@ -9,7 +9,7 @@
     "run_worker_first": ["/api/*"]
   },
   "vars": {
-    "ACCESS_REQUIRED": "true"
+    "ACCESS_REQUIRED": "false"
   },
   "r2_buckets": [
     {
