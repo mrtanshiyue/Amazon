@@ -52,7 +52,15 @@ jobs:
               if(hit) process.stdout.write(hit.uuid || hit.id || "");
             });')"
           if [ -z "$DB_ID" ]; then
-            npx wrangler d1 create "$DB_NAME"
+            if ! npx wrangler d1 create "$DB_NAME"; then
+              echo "Existing D1 databases:"
+              npx wrangler d1 list --json | node -e '
+                let s=""; process.stdin.on("data",d=>s+=d); process.stdin.on("end",()=>{
+                  const rows=JSON.parse(s);
+                  for (const row of rows) console.log("- " + row.name);
+                });'
+              exit 1
+            fi
             DB_ID="$(npx wrangler d1 list --json | node -e '
               let s=""; process.stdin.on("data",d=>s+=d); process.stdin.on("end",()=>{
                 const rows=JSON.parse(s); const hit=rows.find(x=>x.name===process.env.DB_NAME);
