@@ -8,363 +8,414 @@
   <style>
     :root{
       color-scheme:light;
-      --bg:#f4f5f8;
+      --bg:#f7f8fa;
+      --sidebar:#f3f4f6;
       --surface:#ffffff;
-      --surface-2:#f8f9fb;
-      --surface-3:#f1f3f7;
-      --text:#17181a;
-      --muted:#6f737a;
-      --muted-2:#92979f;
-      --line:#e4e7ec;
-      --line-strong:#d5d9e0;
-      --accent:#0a73e8;
-      --accent-hover:#0567d1;
-      --accent-soft:#eaf3ff;
-      --danger:#d63c45;
+      --surface-raised:#ffffff;
+      --surface-subtle:#f7f8fa;
+      --surface-hover:#eef0f3;
+      --text:#1c1d20;
+      --text-2:#5f636b;
+      --text-3:#8a8f98;
+      --border:#e1e4e8;
+      --border-strong:#cfd3d9;
+      --accent:#1769e0;
+      --accent-hover:#125bc5;
+      --accent-soft:#eaf2ff;
+      --danger:#cf3d46;
       --danger-soft:#fff0f1;
-      --good:#17824b;
-      --good-soft:#ebf8f1;
-      --input:#ffffff;
-      --shadow:0 10px 28px rgba(18,24,40,.055);
-      --shadow-lg:0 28px 80px rgba(18,24,40,.18);
-      --radius:18px;
-      --radius-sm:12px;
+      --success:#1a7f4b;
+      --success-soft:#eaf7f0;
+      --shadow:0 12px 32px rgba(16,24,40,.08);
+      --shadow-lg:0 28px 80px rgba(16,24,40,.20);
+      --radius:12px;
     }
     [data-theme="dark"]{
       color-scheme:dark;
-      --bg:#111214;
-      --surface:#1b1c1f;
-      --surface-2:#202226;
-      --surface-3:#27292e;
-      --text:#f3f4f6;
-      --muted:#a5a9b0;
-      --muted-2:#7f848c;
-      --line:#303238;
-      --line-strong:#41444b;
-      --accent:#409cff;
-      --accent-hover:#65adff;
-      --accent-soft:#162b43;
-      --danger:#ff6b74;
-      --danger-soft:#3a2023;
-      --good:#45cf81;
-      --good-soft:#183326;
-      --input:#17181b;
-      --shadow:0 14px 36px rgba(0,0,0,.22);
-      --shadow-lg:0 30px 90px rgba(0,0,0,.42);
+      --bg:#151618;
+      --sidebar:#191a1d;
+      --surface:#1f2024;
+      --surface-raised:#25262b;
+      --surface-subtle:#25262b;
+      --surface-hover:#2b2d32;
+      --text:#f1f2f4;
+      --text-2:#b0b4bb;
+      --text-3:#7e838c;
+      --border:#303238;
+      --border-strong:#42454c;
+      --accent:#5aa6ff;
+      --accent-hover:#78b6ff;
+      --accent-soft:#1d3048;
+      --danger:#ff7078;
+      --danger-soft:#3a2225;
+      --success:#53cf89;
+      --success-soft:#193226;
+      --shadow:0 12px 32px rgba(0,0,0,.22);
+      --shadow-lg:0 30px 90px rgba(0,0,0,.46);
     }
     *{box-sizing:border-box}
     html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,"PingFang SC","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased}
     body{font-size:14px}
-    button,input,select{font:inherit}
-    button{color:inherit}
-    button,input,select{outline:none}
+    button,input,select{font:inherit;color:inherit}
+    button{cursor:pointer}
     .hidden{display:none!important}
     .file-input{display:none}
-    .app{width:min(1680px,100%);margin:0 auto;padding:16px;display:grid;grid-template-columns:304px minmax(0,1fr);gap:16px;min-height:100vh}
-    .sidebar,.panel,.topbar{background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow)}
-    .sidebar{position:sticky;top:16px;height:calc(100vh - 32px);border-radius:22px;display:flex;flex-direction:column;overflow:hidden}
-    .brand{padding:18px 18px 16px;border-bottom:1px solid var(--line)}
-    .brand-row{display:flex;align-items:center;gap:11px}
-    .brand-mark{width:38px;height:38px;border-radius:12px;background:linear-gradient(145deg,var(--accent),#4da5ff);color:#fff;display:grid;place-items:center;font-size:18px;font-weight:850;box-shadow:0 8px 18px color-mix(in srgb,var(--accent) 22%,transparent)}
-    .brand-copy{min-width:0}
-    .brand h1{font-size:17px;line-height:1.1;margin:0;letter-spacing:-.35px}
-    .brand p{margin:5px 0 0;color:var(--muted);font-size:11.5px;line-height:1.35}
-    .side-tools{padding:14px;border-bottom:1px solid var(--line);display:grid;gap:12px}
-    .side-section{display:grid;gap:7px}
-    .section-label{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted-2);padding-left:2px}
-    .store-tools{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px;align-items:center}
-    .store-actions{display:flex;gap:5px}
-    .store-actions .btn{padding:0 9px;min-width:0}
-    .product-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+    .app-shell{min-height:100vh;display:grid;grid-template-columns:272px minmax(0,1fr)}
+    .sidebar{position:sticky;top:0;height:100vh;background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;min-width:0}
+    .brand{height:68px;padding:0 16px;display:flex;align-items:center;border-bottom:1px solid var(--border)}
+    .brand-mark{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:var(--text);color:var(--surface);font-weight:900;font-size:15px;letter-spacing:-.04em;flex:0 0 auto}
+    .brand-copy{min-width:0;margin-left:10px}
+    .brand-title{font-size:13.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .brand-sub{font-size:10.5px;color:var(--text-3);margin-top:2px}
+    .sidebar-section{padding:13px 12px 0}
+    .sidebar-label{font-size:10px;line-height:1;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);margin:0 4px 7px}
+    .store-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px}
+    .store-actions{display:flex;gap:4px}
+    .store-actions .icon-btn{width:34px;height:36px}
+    .primary-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px}
     .search-wrap{position:relative}
-    .search-wrap input{padding-left:35px}
-    .search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted-2);pointer-events:none;font-size:15px}
-    input[type="text"],input[type="number"],input[type="search"],select{width:100%;height:40px;border:1px solid var(--line);background:var(--input);color:var(--text);border-radius:11px;padding:0 12px;transition:.16s border-color,.16s box-shadow,.16s background}
-    input::placeholder{color:var(--muted-2)}
-    input:focus,select:focus{border-color:color-mix(in srgb,var(--accent) 72%,var(--line));box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 12%,transparent)}
-    .product-list-wrap{min-height:0;display:flex;flex-direction:column;flex:1}
-    .product-list-head{display:flex;align-items:center;justify-content:space-between;padding:13px 14px 7px}
-    .product-list-title{font-size:11px;font-weight:800;color:var(--muted-2);letter-spacing:.05em;text-transform:uppercase}
-    .product-list{padding:0 9px 12px;overflow:auto;display:flex;flex-direction:column;gap:6px;flex:1}
-    .product-item{width:100%;border:1px solid transparent;background:transparent;border-radius:14px;padding:9px;text-align:left;cursor:pointer;display:grid;grid-template-columns:54px minmax(0,1fr);gap:10px;align-items:center;transition:.16s background,.16s border-color,.16s transform}
-    .product-item:hover{background:var(--surface-2)}
-    .product-item:active{transform:scale(.99)}
-    .product-item.active{background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 24%,var(--line))}
-    .thumb{width:54px;height:54px;border-radius:12px;border:1px solid var(--line);background:var(--surface);object-fit:contain;display:block;padding:4px}
-    .thumb.placeholder{display:grid;place-items:center;color:var(--muted-2);font-size:18px;background:var(--surface-2)}
+    .search-wrap input{padding-left:34px}
+    .search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text-3);font-size:14px;pointer-events:none}
+    input[type="text"],input[type="number"],input[type="search"],select{width:100%;height:36px;border:1px solid var(--border);background:var(--surface);border-radius:9px;padding:0 10px;outline:none;transition:.15s border-color,.15s box-shadow,.15s background}
+    input::placeholder{color:var(--text-3)}
+    input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 12%,transparent)}
+    .btn{min-height:36px;border:1px solid var(--border);background:var(--surface);border-radius:9px;padding:0 11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:.14s background,.14s border-color,.14s transform}
+    .btn:hover{background:var(--surface-hover);border-color:var(--border-strong)}
+    .btn:active{transform:scale(.985)}
+    .btn.primary{background:var(--text);color:var(--surface);border-color:var(--text)}
+    .btn.primary:hover{background:color-mix(in srgb,var(--text) 88%,var(--surface));border-color:transparent}
+    .btn.accent{background:var(--accent);color:#fff;border-color:var(--accent)}
+    .btn.accent:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
+    .btn.danger{color:var(--danger);background:var(--danger-soft);border-color:color-mix(in srgb,var(--danger) 20%,var(--border))}
+    .btn.small{min-height:32px;font-size:11.5px;padding:0 9px}
+    .icon-btn{border:1px solid var(--border);background:var(--surface);border-radius:9px;display:grid;place-items:center;padding:0;font-weight:800;transition:.14s background,.14s border-color}
+    .icon-btn:hover{background:var(--surface-hover);border-color:var(--border-strong)}
+    .btn:disabled,.icon-btn:disabled{opacity:.38;cursor:not-allowed;transform:none}
+    .product-nav{margin-top:14px;min-height:0;display:flex;flex-direction:column;flex:1;border-top:1px solid var(--border)}
+    .product-nav-head{height:42px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;flex:0 0 auto}
+    .product-nav-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3)}
+    .product-nav-count{font-size:10px;color:var(--text-3);background:var(--surface-hover);padding:2px 6px;border-radius:999px}
+    .product-list{overflow:auto;padding:0 8px 10px;display:flex;flex-direction:column;gap:2px}
+    .product-item{position:relative;width:100%;border:0;background:transparent;border-radius:9px;padding:7px 8px;text-align:left;display:grid;grid-template-columns:42px minmax(0,1fr);gap:9px;align-items:center;transition:.13s background}
+    .product-item:hover{background:var(--surface-hover)}
+    .product-item.active{background:var(--surface)}
+    .product-item.active:before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:2px;border-radius:999px;background:var(--accent)}
+    .thumb{width:42px;height:42px;border-radius:8px;border:1px solid var(--border);background:var(--surface);object-fit:contain;padding:3px;display:block}
+    .thumb.placeholder{display:grid;place-items:center;color:var(--text-3);font-size:15px}
     .product-meta{min-width:0}
-    .product-sku{font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .product-asin{margin-top:3px;color:var(--muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .product-counts{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
-    .mini-chip{font-size:10px;color:var(--muted);background:color-mix(in srgb,var(--surface) 60%,transparent);border:1px solid color-mix(in srgb,var(--line) 78%,transparent);padding:2px 6px;border-radius:999px}
-    .side-footer{padding:11px;border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr 40px;gap:7px;background:color-mix(in srgb,var(--surface-2) 55%,var(--surface))}
-    .main{display:flex;flex-direction:column;gap:14px;min-width:0;padding-bottom:16px}
-    .topbar{border-radius:20px;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;gap:14px}
-    .eyebrow{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
-    .title h2{font-size:25px;line-height:1.08;margin:0;letter-spacing:-.55px}
-    .title div{color:var(--muted);font-size:12px;margin-top:5px}
-    .panel{border-radius:20px;padding:18px}
-    .panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
-    .panel-title{font-size:15px;font-weight:850;letter-spacing:-.15px}
-    .panel-sub{font-size:11.5px;color:var(--muted);margin-top:4px}
-    .product-hero{display:grid;grid-template-columns:220px minmax(0,1fr);gap:22px;align-items:start}
-    .image-box{width:220px;aspect-ratio:1;border:1px solid var(--line);border-radius:18px;background:linear-gradient(145deg,var(--surface-2),var(--surface));overflow:hidden;display:grid;place-items:center}
-    .image-box img{width:100%;height:100%;object-fit:contain;background:var(--surface);padding:10px}
-    .image-empty{padding:20px;text-align:center;color:var(--muted);font-size:12px;line-height:1.5}
-    .product-info{min-width:0}
-    .product-name-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
-    .product-name-line h3{font-size:22px;margin:0;letter-spacing:-.35px}
-    .cloud-badge{display:inline-flex;align-items:center;gap:6px;background:var(--good-soft);color:var(--good);border:1px solid color-mix(in srgb,var(--good) 20%,var(--line));font-size:11px;font-weight:750;border-radius:999px;padding:5px 8px}
-    .cloud-dot{width:6px;height:6px;border-radius:50%;background:currentColor}
-    .readonly-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .readonly-field{min-width:0}
-    .readonly-label{font-size:10.5px;color:var(--muted-2);font-weight:800;letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px}
-    .readonly-value{min-height:42px;border:1px solid var(--line);background:var(--surface-2);border-radius:11px;padding:10px 12px;font-weight:650;word-break:break-word}
-    .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:16px}
-    .stat{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:12px 13px}
-    .stat-label{font-size:10.5px;color:var(--muted);margin-bottom:6px}
-    .stat b{display:block;color:var(--text);font-size:21px;letter-spacing:-.4px}
-    .table-wrap{width:100%;overflow:auto;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
-    table{width:100%;border-collapse:separate;border-spacing:0;min-width:720px}
-    th,td{border-bottom:1px solid var(--line);padding:11px 12px;vertical-align:middle}
-    th{position:sticky;top:0;background:var(--surface-2);z-index:1;text-align:left;color:var(--muted-2);font-size:10.5px;text-transform:uppercase;letter-spacing:.055em;white-space:nowrap;font-weight:850}
+    .product-sku{font-size:12.5px;font-weight:780;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .product-asin{font-size:10.5px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+    .product-counts{font-size:10px;color:var(--text-3);margin-top:4px;white-space:nowrap}
+    .empty{padding:26px 12px;text-align:center;color:var(--text-3);font-size:11.5px;line-height:1.6}
+    .empty strong{display:block;color:var(--text-2);font-size:12px;margin-bottom:3px}
+    .sidebar-footer{border-top:1px solid var(--border);padding:9px 10px;display:grid;grid-template-columns:1fr 1fr 36px;gap:5px;flex:0 0 auto}
+    .workspace{min-width:0;min-height:100vh}
+    .workspace-inner{width:min(1280px,100%);margin:0 auto;padding:0 28px 40px}
+    .workspace-header{height:92px;display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:22px 0 17px;border-bottom:1px solid var(--border)}
+    .breadcrumb{font-size:11px;color:var(--text-3);margin-bottom:5px}
+    .workspace-title{font-size:25px;line-height:1.05;font-weight:820;letter-spacing:-.045em;margin:0}
+    .workspace-meta{font-size:11.5px;color:var(--text-3);margin-top:5px}
+    .cloud-state{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;color:var(--success);background:var(--success-soft);border:1px solid color-mix(in srgb,var(--success) 18%,var(--border));border-radius:999px;padding:5px 8px;white-space:nowrap}
+    .cloud-state:before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+    .view-tabs{height:51px;display:flex;align-items:flex-end;gap:22px;border-bottom:1px solid var(--border)}
+    .view-tab{position:relative;height:50px;border:0;background:transparent;padding:0;color:var(--text-2);font-weight:700;font-size:12px}
+    .view-tab:hover{color:var(--text)}
+    .view-tab.active{color:var(--text)}
+    .view-tab.active:after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--text);border-radius:2px 2px 0 0}
+    .tab-count{font-size:9.5px;color:var(--text-3);background:var(--surface-hover);padding:2px 5px;border-radius:999px;margin-left:4px}
+    .content-view{padding-top:24px}
+    .overview-layout{display:grid;grid-template-columns:300px minmax(0,1fr);gap:28px}
+    .product-visual{border:1px solid var(--border);background:var(--surface);border-radius:14px;padding:14px}
+    .product-image{width:100%;aspect-ratio:1;background:var(--surface-subtle);border-radius:10px;display:grid;place-items:center;overflow:hidden}
+    .product-image img{width:100%;height:100%;object-fit:contain;padding:8px}
+    .image-empty{color:var(--text-3);font-size:11.5px;text-align:center;padding:20px}
+    .overview-main{min-width:0}
+    .overview-heading{font-size:17px;font-weight:800;letter-spacing:-.02em;margin:0 0 14px}
+    .field-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .readonly-field{border:1px solid var(--border);background:var(--surface);border-radius:10px;padding:12px 13px}
+    .readonly-label{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);margin-bottom:6px}
+    .readonly-value{font-size:13.5px;font-weight:700;word-break:break-word}
+    .metric-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px}
+    .metric{border:1px solid var(--border);background:var(--surface);border-radius:10px;padding:12px 13px}
+    .metric-label{font-size:10.5px;color:var(--text-3);margin-bottom:7px}
+    .metric-value{font-size:23px;font-weight:820;letter-spacing:-.04em}
+    .section-header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:12px}
+    .section-title{font-size:16px;font-weight:800;letter-spacing:-.02em}
+    .section-sub{font-size:11px;color:var(--text-3);margin-top:4px}
+    .data-surface{border:1px solid var(--border);background:var(--surface);border-radius:12px;overflow:hidden}
+    .table-wrap{width:100%;overflow:auto}
+    table{width:100%;border-collapse:collapse;min-width:700px}
+    th,td{padding:11px 13px;border-bottom:1px solid var(--border);vertical-align:middle;text-align:left}
+    th{background:var(--surface-subtle);font-size:9.5px;text-transform:uppercase;letter-spacing:.075em;color:var(--text-3);font-weight:850;white-space:nowrap}
     tr:last-child td{border-bottom:0}
-    tbody tr:hover td{background:color-mix(in srgb,var(--surface-2) 62%,transparent)}
-    td.term{min-width:250px}
-    td.bid{width:130px}
-    td.action{width:44px;text-align:center}
-    .read-table td{font-size:13px}
-    .money{font-variant-numeric:tabular-nums;font-weight:700}
-    .read-empty{padding:34px 14px;text-align:center;color:var(--muted);font-size:12.5px}
-    .match-badges{display:flex;gap:6px;flex-wrap:wrap}
-    .match-badge{display:inline-flex;align-items:center;border:1px solid var(--line);background:var(--surface-2);border-radius:999px;padding:5px 8px;font-size:10.5px;font-weight:700;color:var(--muted)}
-    .empty{padding:30px 14px;text-align:center;color:var(--muted);font-size:12px}
-    .empty strong{display:block;color:var(--text);font-size:13px;margin-bottom:5px}
-    .welcome{min-height:calc(100vh - 32px);display:grid;place-items:center;padding:34px}
-    .welcome-card{max-width:500px;text-align:center}
-    .welcome-card .mark{width:66px;height:66px;border-radius:20px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:27px;font-weight:850;margin:0 auto 16px}
-    .welcome-card h2{margin:0 0 8px;font-size:24px}
-    .welcome-card p{margin:0 auto;color:var(--muted);line-height:1.65;max-width:440px}
-    .btn{border:1px solid var(--line);background:var(--surface);border-radius:11px;min-height:38px;padding:0 13px;font-weight:720;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:.15s transform,.15s background,.15s border-color,.15s color}
-    .btn:hover{background:var(--surface-2);border-color:var(--line-strong)}
-    .btn:active{transform:scale(.98)}
-    .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
-    .btn.primary:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
-    .btn.danger{color:var(--danger);background:var(--danger-soft);border-color:color-mix(in srgb,var(--danger) 20%,var(--line))}
-    .btn.small{min-height:32px;padding:0 10px;font-size:11.5px}
-    .btn.icon{width:38px;height:38px;min-height:38px;padding:0;border-radius:11px}
-    .btn:disabled{opacity:.42;cursor:not-allowed;transform:none}
-    .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,14px);background:color-mix(in srgb,var(--text) 94%,transparent);color:var(--surface);padding:10px 14px;border-radius:999px;font-size:12px;opacity:0;pointer-events:none;transition:.2s;z-index:200;box-shadow:var(--shadow-lg)}
-    .toast.show{opacity:1;transform:translate(-50%,0)}
-    .modal-backdrop{position:fixed;inset:0;background:rgba(15,18,24,.48);backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);z-index:100;display:none;align-items:center;justify-content:center;padding:20px}
-    .modal-backdrop.open{display:flex}
-    .modal-card{width:min(1120px,100%);height:min(850px,92vh);background:var(--surface);border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow-lg);display:flex;flex-direction:column;overflow:hidden}
-    .modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px 15px}
-    .modal-head h2{margin:0;font-size:21px;letter-spacing:-.35px}
-    .modal-tabbar{display:flex;gap:4px;padding:0 20px 12px;border-bottom:1px solid var(--line)}
-    .modal-tab{border:0;background:transparent;color:var(--muted);height:34px;padding:0 12px;border-radius:9px;font-weight:750;cursor:pointer}
-    .modal-tab:hover{background:var(--surface-2);color:var(--text)}
-    .modal-tab.active{background:var(--accent-soft);color:var(--accent)}
-    .modal-body{padding:20px;overflow:auto;flex:1;min-height:0}
-    .modal-panel{display:none}
-    .modal-panel.active{display:block}
-    .modal-image-row{display:grid;grid-template-columns:210px minmax(0,1fr);gap:22px;align-items:start}
-    .modal-image-preview{width:210px;aspect-ratio:1;border:1px dashed var(--line-strong);border-radius:18px;background:var(--surface-2);display:grid;place-items:center;overflow:hidden;color:var(--muted);font-size:12px;text-align:center;line-height:1.5;padding:10px}
-    .modal-image-preview img{width:100%;height:100%;object-fit:contain;background:var(--surface)}
-    .modal-image-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
-    .modal-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .field label{display:block;font-size:10.5px;color:var(--muted);margin:0 0 6px 2px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
-    .modal-note{color:var(--muted);font-size:11.5px;line-height:1.6;margin-top:10px;background:var(--surface-2);border:1px solid var(--line);padding:10px 12px;border-radius:11px}
-    .modal-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
-    .modal-section-title{font-weight:850;font-size:15px}
-    .modal-editor-empty{padding:34px 14px;text-align:center;color:var(--muted);font-size:12px;border:1px dashed var(--line);border-radius:13px;background:var(--surface-2)}
-    .bid-input{display:flex;align-items:center;border:1px solid var(--line);border-radius:10px;background:var(--input);overflow:hidden;height:38px}
-    .bid-input span{padding-left:10px;color:var(--muted);font-size:12px}
-    .bid-input input{height:36px;border:0;border-radius:0;padding-left:4px;box-shadow:none;min-width:0}
+    tbody tr:hover td{background:color-mix(in srgb,var(--surface-hover) 55%,transparent)}
+    td{font-size:12.5px}
+    .money{font-variant-numeric:tabular-nums;font-weight:720}
+    .read-empty{padding:44px 20px;text-align:center;color:var(--text-3);font-size:12px}
+    .match-badges{display:flex;gap:5px;flex-wrap:wrap}
+    .match-badge{display:inline-flex;align-items:center;border:1px solid var(--border);background:var(--surface-subtle);border-radius:999px;padding:4px 7px;font-size:10px;color:var(--text-2);font-weight:650}
+    .welcome{min-height:100vh;display:grid;place-items:center;padding:40px}
+    .welcome-card{max-width:460px;text-align:center}
+    .welcome-mark{width:54px;height:54px;margin:0 auto 14px;border-radius:14px;background:var(--text);color:var(--surface);display:grid;place-items:center;font-size:20px;font-weight:900}
+    .welcome h2{font-size:21px;letter-spacing:-.03em;margin:0 0 7px}
+    .welcome p{font-size:12px;line-height:1.7;color:var(--text-3);margin:0}
+    .dialog-backdrop{position:fixed;inset:0;background:rgba(14,16,20,.46);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:18px;z-index:100}
+    .dialog-backdrop.open{display:flex}
+    .editor-dialog{width:min(1100px,100%);height:min(780px,92vh);background:var(--surface-raised);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow-lg);display:flex;flex-direction:column;overflow:hidden}
+    .dialog-head{height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;border-bottom:1px solid var(--border);flex:0 0 auto}
+    .dialog-kicker{font-size:9.5px;font-weight:850;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);margin-bottom:3px}
+    .dialog-title{font-size:16px;font-weight:820}
+    .dialog-close{width:34px;height:34px;border:0;background:transparent;border-radius:8px;font-size:19px;display:grid;place-items:center}
+    .dialog-close:hover{background:var(--surface-hover)}
+    .editor-shell{display:grid;grid-template-columns:180px minmax(0,1fr);min-height:0;flex:1}
+    .editor-nav{padding:14px 10px;background:var(--surface-subtle);border-right:1px solid var(--border);display:flex;flex-direction:column;gap:3px}
+    .editor-nav-item{height:38px;border:0;background:transparent;border-radius:8px;padding:0 10px;display:flex;align-items:center;justify-content:space-between;text-align:left;color:var(--text-2);font-size:12px;font-weight:700}
+    .editor-nav-item:hover{background:var(--surface-hover);color:var(--text)}
+    .editor-nav-item.active{background:var(--surface);color:var(--text);box-shadow:0 0 0 1px var(--border)}
+    .editor-nav-count{font-size:9.5px;color:var(--text-3)}
+    .editor-content{min-width:0;overflow:auto;padding:22px}
+    .editor-panel{display:none}
+    .editor-panel.active{display:block}
+    .editor-section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:16px}
+    .editor-section-title{font-size:17px;font-weight:820;letter-spacing:-.025em}
+    .editor-section-sub{font-size:11px;color:var(--text-3);margin-top:4px}
+    .product-form{display:grid;grid-template-columns:230px minmax(0,1fr);gap:24px;align-items:start}
+    .image-editor{width:230px}
+    .image-preview{width:230px;aspect-ratio:1;border:1px dashed var(--border-strong);background:var(--surface-subtle);border-radius:12px;display:grid;place-items:center;overflow:hidden;color:var(--text-3);font-size:11px;text-align:center;padding:12px}
+    .image-preview img{width:100%;height:100%;object-fit:contain}
+    .image-actions{display:flex;gap:6px;margin-top:8px}
+    .form-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .field label{display:block;font-size:9.5px;font-weight:850;text-transform:uppercase;letter-spacing:.075em;color:var(--text-3);margin:0 0 6px 2px}
+    .form-note{margin-top:12px;border-left:2px solid var(--border-strong);padding:3px 0 3px 10px;color:var(--text-3);font-size:11px;line-height:1.6}
+    .editor-empty{padding:42px 20px;text-align:center;color:var(--text-3);font-size:11.5px;border:1px dashed var(--border);border-radius:10px}
+    .bid-input{display:flex;align-items:center;height:36px;border:1px solid var(--border);background:var(--surface);border-radius:8px;overflow:hidden}
+    .bid-input span{padding-left:9px;color:var(--text-3);font-size:11px}
+    .bid-input input{height:34px;border:0;border-radius:0;box-shadow:none;padding-left:4px;min-width:0}
     .check-cell{width:110px;text-align:center}
     .check{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px}
-    .check input{width:18px;height:18px;accent-color:var(--accent);cursor:pointer}
-    .modal-footer{display:flex;justify-content:space-between;align-items:center;gap:9px;padding:13px 20px 16px;border-top:1px solid var(--line);background:var(--surface)}
-    .modal-footer-right{display:flex;gap:8px}
-    @media (max-width:980px){
-      .app{grid-template-columns:278px minmax(0,1fr);padding:10px;gap:10px}
-      .sidebar{top:10px;height:calc(100vh - 20px)}
-      .product-hero{grid-template-columns:180px minmax(0,1fr)}
-      .image-box{width:180px}
-      .modal-card{height:94vh}
+    .check input{width:17px;height:17px;accent-color:var(--accent);cursor:pointer}
+    .dialog-footer{height:62px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 18px;flex:0 0 auto}
+    .dialog-footer-actions{display:flex;gap:7px}
+    .mini-dialog{width:min(430px,100%);background:var(--surface-raised);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow-lg);overflow:hidden}
+    .mini-dialog-body{padding:18px}
+    .mini-dialog-title{font-size:16px;font-weight:820;margin-bottom:4px}
+    .mini-dialog-sub{font-size:11px;color:var(--text-3);margin-bottom:16px;line-height:1.55}
+    .mini-dialog-footer{border-top:1px solid var(--border);padding:12px 14px;display:flex;justify-content:flex-end;gap:7px}
+    .toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,12px);background:var(--text);color:var(--surface);padding:9px 13px;border-radius:999px;font-size:11.5px;opacity:0;pointer-events:none;transition:.18s;z-index:200;box-shadow:var(--shadow)}
+    .toast.show{opacity:1;transform:translate(-50%,0)}
+    @media(max-width:920px){
+      .app-shell{grid-template-columns:238px minmax(0,1fr)}
+      .workspace-inner{padding:0 18px 30px}
+      .overview-layout{grid-template-columns:240px minmax(0,1fr);gap:18px}
+      .editor-shell{grid-template-columns:154px minmax(0,1fr)}
     }
-    @media (max-width:760px){
-      .app{display:block;padding:8px}
-      .sidebar{position:relative;top:0;height:auto;max-height:none;margin-bottom:10px}
-      .product-list-wrap{max-height:330px}
-      .main{gap:10px}
-      .topbar,.panel{border-radius:16px}
-      .topbar{padding:15px}
-      .panel{padding:14px}
-      .product-hero{grid-template-columns:120px minmax(0,1fr);gap:14px}
-      .image-box{width:120px}
-      .stats{grid-template-columns:repeat(3,1fr)}
-      .modal-backdrop{padding:8px}
-      .modal-card{height:calc(100vh - 16px);border-radius:18px}
-      .modal-head{padding:14px 14px 11px}
-      .modal-tabbar{padding:0 14px 10px;overflow:auto}
-      .modal-body{padding:14px}
-      .modal-footer{padding:10px 14px 12px}
-      .modal-image-row{grid-template-columns:1fr}
-      .modal-image-preview{width:160px}
-      .modal-fields{grid-template-columns:1fr}
-      .readonly-grid{grid-template-columns:1fr}
+    @media(max-width:720px){
+      .app-shell{display:block}
+      .sidebar{position:relative;height:auto;border-right:0;border-bottom:1px solid var(--border)}
+      .brand{height:58px}
+      .sidebar-section{padding-top:10px}
+      .product-nav{max-height:300px}
+      .sidebar-footer{grid-template-columns:1fr 1fr 36px}
+      .workspace-inner{padding:0 12px 28px}
+      .workspace-header{height:auto;padding:18px 0 13px;align-items:flex-start}
+      .workspace-title{font-size:21px}
+      .view-tabs{overflow:auto;gap:18px}
+      .overview-layout{grid-template-columns:1fr}
+      .product-visual{width:min(280px,100%)}
+      .field-grid{grid-template-columns:1fr}
+      .metric-grid{grid-template-columns:repeat(3,1fr)}
+      .dialog-backdrop{padding:8px}
+      .editor-dialog{height:calc(100vh - 16px);border-radius:11px}
+      .editor-shell{display:block}
+      .editor-nav{border-right:0;border-bottom:1px solid var(--border);display:flex;flex-direction:row;overflow:auto;padding:8px}
+      .editor-nav-item{flex:0 0 auto}
+      .editor-content{padding:16px}
+      .product-form{grid-template-columns:1fr}
+      .image-editor,.image-preview{width:180px}
+      .form-fields{grid-template-columns:1fr}
     }
-    @media (max-width:520px){
-      .brand{padding:14px}
-      .side-tools{padding:11px}
-      .store-tools{grid-template-columns:1fr}
+    @media(max-width:480px){
+      .store-row{grid-template-columns:1fr}
       .store-actions{display:grid;grid-template-columns:repeat(3,1fr)}
-      .product-actions{grid-template-columns:1fr}
-      .side-footer{grid-template-columns:1fr 1fr 40px}
-      .topbar .title h2{font-size:21px}
-      .product-hero{grid-template-columns:1fr}
-      .image-box{width:150px}
-      .stats{grid-template-columns:1fr 1fr 1fr}
-      .stat{padding:10px}
-      .stat b{font-size:18px}
-      .modal-tab{white-space:nowrap}
-      .modal-footer{align-items:stretch}
-      .modal-footer-right{flex:1}
-      .modal-footer-right .btn{flex:1}
+      .store-actions .icon-btn{width:auto}
+      .primary-actions{grid-template-columns:1fr}
+      .metric-grid{grid-template-columns:1fr 1fr 1fr}
+      .metric{padding:10px}
+      .metric-value{font-size:19px}
+      .dialog-footer{padding:0 12px}
+      .dialog-footer-actions{flex:1}
+      .dialog-footer-actions .btn{flex:1}
     }
   </style>
 </head>
 <body>
-  <div class="app">
+  <div class="app-shell">
     <aside class="sidebar">
       <div class="brand">
-        <div class="brand-row">
-          <div class="brand-mark">K</div>
-          <div class="brand-copy">
-            <h1>Amazon Keyword Manager</h1>
-            <p>多店铺关键词与广告词管理</p>
+        <div class="brand-mark">K</div>
+        <div class="brand-copy">
+          <div class="brand-title">Amazon Keyword Manager</div>
+          <div class="brand-sub">Cloud workspace</div>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Store</div>
+        <div class="store-row">
+          <select id="storeSelect" aria-label="选择店铺"></select>
+          <div class="store-actions">
+            <button class="icon-btn" data-store-action="add" title="新建店铺">＋</button>
+            <button class="icon-btn" data-store-action="rename" title="重命名店铺">✎</button>
+            <button class="icon-btn" data-store-action="delete" title="删除店铺">−</button>
           </div>
         </div>
       </div>
-      <div class="side-tools">
-        <div class="side-section">
-          <div class="section-label">Store</div>
-          <div class="store-tools">
-            <select id="storeSelect" aria-label="选择店铺"></select>
-            <div class="store-actions">
-              <button class="btn small" data-store-action="add" title="新建店铺">＋</button>
-              <button class="btn small" data-store-action="rename" title="重命名店铺">改</button>
-              <button class="btn small danger" data-store-action="delete" title="删除店铺">删</button>
-            </div>
-          </div>
-        </div>
-        <div class="side-section">
-          <div class="section-label">Product</div>
-          <div class="product-actions">
-            <button class="btn primary" id="addProductBtn">＋ 新建</button>
-            <button class="btn" id="editProductBtn">编辑当前</button>
-          </div>
-        </div>
-        <div class="side-section">
-          <div class="section-label">Search</div>
-          <div class="search-wrap">
-            <span class="search-icon">⌕</span>
-            <input id="searchInput" type="search" placeholder="SKU、ASIN、关键词…" autocomplete="off" />
-          </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Product</div>
+        <div class="primary-actions">
+          <button class="btn primary" id="addProductBtn">＋ 新建商品</button>
+          <button class="btn" id="editProductBtn">编辑当前</button>
         </div>
       </div>
-      <div class="product-list-wrap">
-        <div class="product-list-head">
-          <div class="product-list-title">Products</div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Search</div>
+        <div class="search-wrap">
+          <span class="search-icon">⌕</span>
+          <input id="searchInput" type="search" placeholder="SKU、ASIN、关键词…" autocomplete="off" />
+        </div>
+      </div>
+
+      <div class="product-nav">
+        <div class="product-nav-head">
+          <div class="product-nav-title">Products</div>
+          <div class="product-nav-count" id="productNavCount">0</div>
         </div>
         <div class="product-list" id="productList"></div>
       </div>
-      <div class="side-footer">
+
+      <div class="sidebar-footer">
         <button class="btn small" id="exportBtn">导出</button>
         <button class="btn small" id="importBtn">恢复</button>
-        <button class="btn icon small" id="themeGlobalBtn" title="切换明暗">◐</button>
+        <button class="icon-btn" id="themeGlobalBtn" title="切换明暗">◐</button>
         <input class="file-input" id="importFile" type="file" accept="application/json,.json" />
       </div>
     </aside>
 
-    <main class="main" id="main"></main>
+    <section class="workspace">
+      <main id="main"></main>
+    </section>
   </div>
 
-  <div class="modal-backdrop" id="productModal" aria-hidden="true">
-    <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="productModalTitle">
-      <div class="modal-head">
+  <div class="dialog-backdrop" id="productModal" aria-hidden="true">
+    <section class="editor-dialog" role="dialog" aria-modal="true" aria-labelledby="productModalTitle">
+      <header class="dialog-head">
         <div>
-          <div class="eyebrow">Product Workspace</div>
-          <h2 id="productModalTitle">添加商品</h2>
+          <div class="dialog-kicker">Product editor</div>
+          <div class="dialog-title" id="productModalTitle">添加商品</div>
         </div>
-        <button class="btn icon" id="productModalCloseBtn" type="button" aria-label="关闭">×</button>
-      </div>
-      <div class="modal-tabbar" id="productModalTabs" role="tablist">
-        <button class="modal-tab active" type="button" data-modal-tab="info">商品信息</button>
-        <button class="modal-tab" type="button" data-modal-tab="keywords">关键词</button>
-        <button class="modal-tab" type="button" data-modal-tab="negatives">否定词</button>
-      </div>
-      <div class="modal-body">
-        <div class="modal-panel active" data-modal-panel="info">
-          <div class="modal-image-row">
-            <div>
-              <div class="modal-image-preview" id="productModalImagePreview">完整商品图片预览</div>
-              <div class="modal-image-actions">
-                <button class="btn small" id="productModalChooseImageBtn" type="button">选择图片</button>
-                <button class="btn small hidden" id="productModalRemoveImageBtn" type="button">移除图片</button>
+        <button class="dialog-close" id="productModalCloseBtn" type="button" aria-label="关闭">×</button>
+      </header>
+
+      <div class="editor-shell">
+        <nav class="editor-nav" id="productModalTabs" aria-label="商品编辑区域">
+          <button class="editor-nav-item active" type="button" data-modal-tab="info">
+            <span>商品信息</span>
+          </button>
+          <button class="editor-nav-item" type="button" data-modal-tab="keywords">
+            <span>关键词</span><span class="editor-nav-count" id="modalKeywordCount">0</span>
+          </button>
+          <button class="editor-nav-item" type="button" data-modal-tab="negatives">
+            <span>否定词</span><span class="editor-nav-count" id="modalNegativeCount">0</span>
+          </button>
+        </nav>
+
+        <div class="editor-content">
+          <section class="editor-panel active" data-modal-panel="info">
+            <div class="editor-section-head">
+              <div>
+                <div class="editor-section-title">商品信息</div>
+                <div class="editor-section-sub">维护图片、SKU 与 ASIN</div>
               </div>
             </div>
-            <div>
-              <div class="modal-fields">
-                <div class="field">
-                  <label for="productModalSku">SKU</label>
-                  <input id="productModalSku" type="text" placeholder="例如 YS005" autocomplete="off" />
-                </div>
-                <div class="field">
-                  <label for="productModalAsin">ASIN</label>
-                  <input id="productModalAsin" type="text" placeholder="例如 B0XXXXXXXX" autocomplete="off" />
+            <div class="product-form">
+              <div class="image-editor">
+                <div class="image-preview" id="productModalImagePreview">选择商品图片</div>
+                <div class="image-actions">
+                  <button class="btn small" id="productModalChooseImageBtn" type="button">选择图片</button>
+                  <button class="btn small hidden" id="productModalRemoveImageBtn" type="button">移除</button>
                 </div>
               </div>
-              <div class="modal-note">商品资料、关键词与否定词统一在此窗口维护；右侧详情页保持只读，便于查看和核对。</div>
+              <div>
+                <div class="form-fields">
+                  <div class="field">
+                    <label for="productModalSku">SKU</label>
+                    <input id="productModalSku" type="text" placeholder="例如 YS005" autocomplete="off" />
+                  </div>
+                  <div class="field">
+                    <label for="productModalAsin">ASIN</label>
+                    <input id="productModalAsin" type="text" placeholder="例如 B0XXXXXXXX" autocomplete="off" />
+                  </div>
+                </div>
+                <div class="form-note">右侧工作区只负责查看。所有商品资料、关键词和否定词都在这个编辑器中修改并统一保存。</div>
+              </div>
             </div>
-          </div>
-        </div>
+          </section>
 
-        <div class="modal-panel" data-modal-panel="keywords">
-          <div class="modal-section-head">
-            <div>
-              <div class="modal-section-title">关键词与出价</div>
-              <div class="panel-sub">每个关键词独立维护 Exact / Phrase / Broad Bid</div>
+          <section class="editor-panel" data-modal-panel="keywords">
+            <div class="editor-section-head">
+              <div>
+                <div class="editor-section-title">关键词与出价</div>
+                <div class="editor-section-sub">每个词分别维护 Exact / Phrase / Broad Bid</div>
+              </div>
+              <button class="btn accent small" id="productModalAddKeywordBtn" type="button">＋ 添加关键词</button>
             </div>
-            <button class="btn primary small" id="productModalAddKeywordBtn" type="button">＋ 添加关键词</button>
-          </div>
-          <div id="productModalKeywordEditor"></div>
-        </div>
+            <div id="productModalKeywordEditor"></div>
+          </section>
 
-        <div class="modal-panel" data-modal-panel="negatives">
-          <div class="modal-section-head">
-            <div>
-              <div class="modal-section-title">否定关键词</div>
-              <div class="panel-sub">支持 Negative Exact / Negative Phrase</div>
+          <section class="editor-panel" data-modal-panel="negatives">
+            <div class="editor-section-head">
+              <div>
+                <div class="editor-section-title">否定关键词</div>
+                <div class="editor-section-sub">维护 Negative Exact / Negative Phrase</div>
+              </div>
+              <button class="btn accent small" id="productModalAddNegativeBtn" type="button">＋ 添加否定词</button>
             </div>
-            <button class="btn primary small" id="productModalAddNegativeBtn" type="button">＋ 添加否定词</button>
-          </div>
-          <div id="productModalNegativeEditor"></div>
+            <div id="productModalNegativeEditor"></div>
+          </section>
         </div>
       </div>
-      <div class="modal-footer">
+
+      <footer class="dialog-footer">
         <button class="btn danger hidden" id="productModalDeleteBtn" type="button">删除商品</button>
-        <div class="modal-footer-right">
+        <div class="dialog-footer-actions">
           <button class="btn" id="productModalCancelBtn" type="button">取消</button>
-          <button class="btn primary" id="productModalSaveBtn" type="button">保存商品</button>
+          <button class="btn accent" id="productModalSaveBtn" type="button">保存商品</button>
         </div>
-      </div>
+      </footer>
       <input class="file-input" id="productModalImageFile" type="file" accept="image/*" />
     </section>
   </div>
 
-    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="dialog-backdrop" id="storeModal" aria-hidden="true">
+    <section class="mini-dialog" role="dialog" aria-modal="true" aria-labelledby="storeModalTitle">
+      <div class="mini-dialog-body">
+        <div class="mini-dialog-title" id="storeModalTitle">新建店铺</div>
+        <div class="mini-dialog-sub" id="storeModalSub">为这个工作区输入一个店铺名称。</div>
+        <div class="field">
+          <label for="storeModalName">Store name</label>
+          <input id="storeModalName" type="text" placeholder="例如 YTDBNS · 1" autocomplete="off" />
+        </div>
+      </div>
+      <div class="mini-dialog-footer">
+        <button class="btn" id="storeModalCancelBtn" type="button">取消</button>
+        <button class="btn accent" id="storeModalSaveBtn" type="button">保存</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script>
     const API_BASE = '/api';
@@ -384,6 +435,8 @@
     let pendingRemoveProductImage = false;
     let productModalMode = 'create';
     let productModalDraft = null;
+    let mainView = 'overview';
+    let storeModalMode = 'create';
 
     async function apiJson(path, options = {}) {
       const response = await fetch(`${API_BASE}${path}`, {
@@ -501,6 +554,8 @@
       const negativeHost = $('#productModalNegativeEditor');
       const draft = productModalDraft;
       if (!draft) return;
+      $('#modalKeywordCount').textContent = draft.keywords.length;
+      $('#modalNegativeCount').textContent = draft.negatives.length;
 
       keywordHost.innerHTML = draft.keywords.length
         ? `<div class="table-wrap"><table>
@@ -513,7 +568,7 @@
               <td class="action"><button class="btn icon danger" type="button" data-modal-delete-keyword="${row.id}">×</button></td>
             </tr>`).join('')}</tbody>
           </table></div>`
-        : '<div class="modal-editor-empty">还没有关键词</div>';
+        : '<div class="editor-empty">还没有关键词</div>';
 
       negativeHost.innerHTML = draft.negatives.length
         ? `<div class="table-wrap"><table style="min-width:620px">
@@ -525,7 +580,7 @@
               <td class="action"><button class="btn icon danger" type="button" data-modal-delete-negative="${row.id}">×</button></td>
             </tr>`).join('')}</tbody>
           </table></div>`
-        : '<div class="modal-editor-empty">还没有否定词</div>';
+        : '<div class="editor-empty">还没有否定词</div>';
     }
 
     function setProductModalTab(tab) {
@@ -702,26 +757,65 @@
       return store?.products.find(p => p.id === store.selectedId) || null;
     }
 
-    function addStore() {
-      const store = makeStore(`店铺 ${state.stores.length + 1}`);
-      state.stores.push(store);
-      state.selectedStoreId = store.id;
-      state.search = '';
-      $('#searchInput').value = '';
+    function openStoreModal(mode = 'create') {
+      storeModalMode = mode;
+      const store = currentStore();
+      if (mode === 'rename' && !store) return toast('请先选择店铺');
+      $('#storeModalTitle').textContent = mode === 'create' ? '新建店铺' : '重命名店铺';
+      $('#storeModalSub').textContent = mode === 'create'
+        ? '为这个工作区创建一个新的店铺分区。'
+        : '修改当前店铺的显示名称。';
+      $('#storeModalName').value = mode === 'rename'
+        ? store.name
+        : `店铺 ${state.stores.length + 1}`;
+      const modal = $('#storeModal');
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden', 'false');
+      requestAnimationFrame(() => {
+        $('#storeModalName').focus();
+        $('#storeModalName').select?.();
+      });
+    }
+
+    function closeStoreModal() {
+      const modal = $('#storeModal');
+      modal.classList.remove('open');
+      modal.setAttribute('aria-hidden', 'true');
+    }
+
+    async function saveStoreModal() {
+      const name = $('#storeModalName').value.trim();
+      if (!name) return toast('请输入店铺名称');
+
+      if (storeModalMode === 'create') {
+        const store = makeStore(name);
+        state.stores.push(store);
+        state.selectedStoreId = store.id;
+        state.search = '';
+        $('#searchInput').value = '';
+        mainView = 'overview';
+        await saveCloudNow();
+        closeStoreModal();
+        render();
+        toast('店铺已创建');
+        return;
+      }
+
+      const store = currentStore();
+      if (!store) return;
+      store.name = name;
+      await saveCloudNow();
+      closeStoreModal();
       render();
-      saveSoon();
-      toast('店铺已创建，可点击“改名”修改名称');
+      toast('店铺名称已更新');
+    }
+
+    function addStore() {
+      openStoreModal('create');
     }
 
     function renameStore() {
-      const store = currentStore();
-      if (!store) return;
-      const name = prompt('修改店铺名称', store.name)?.trim();
-      if (!name || name === store.name) return;
-      store.name = name;
-      saveSoon();
-      render();
-      toast('店铺已重命名');
+      openStoreModal('rename');
     }
 
     function deleteStore() {
@@ -734,6 +828,7 @@
       state.search = '';
       $('#searchInput').value = '';
       saveSoon();
+      mainView = 'overview';
       render();
       toast('店铺已删除');
     }
@@ -742,6 +837,7 @@
       if (!state.stores.some(store => store.id === storeId)) return;
       state.selectedStoreId = storeId;
       state.search = '';
+      mainView = 'overview';
       $('#searchInput').value = '';
       render();
     }
@@ -760,107 +856,127 @@
     function renderSidebar() {
       const store = currentStore();
       const products = store?.products || [];
-      const storeSelect = $('#storeSelect');
       $('#editProductBtn').disabled = !selectedProduct();
-      storeSelect.innerHTML = state.stores.map(item =>
+      $('#productNavCount').textContent = products.length;
+
+      $('#storeSelect').innerHTML = state.stores.map(item =>
         `<option value="${item.id}" ${item.id === state.selectedStoreId ? 'selected' : ''}>${escapeHtml(item.name)} · ${item.products.length}</option>`
       ).join('');
 
+      const filtered = products.filter(product => productMatches(product, state.search));
       const list = $('#productList');
-      const filtered = products.filter(p => productMatches(p, state.search));
+
       if (!filtered.length) {
-        list.innerHTML = `<div class="empty"><strong>${products.length ? '没有匹配结果' : '当前店铺还没有产品'}</strong>${products.length ? '换一个关键词试试' : '点击“新建产品”开始录入'}</div>`;
+        list.innerHTML = `<div class="empty"><strong>${products.length ? '没有匹配结果' : '还没有商品'}</strong>${products.length ? '换一个搜索词试试' : '点击上方“新建商品”开始录入'}</div>`;
         return;
       }
+
       list.innerHTML = filtered.map(product => {
         const active = product.id === store?.selectedId ? 'active' : '';
         const image = product.image
           ? `<img class="thumb" src="${product.image}" alt="" />`
-          : `<div class="thumb placeholder">▧</div>`;
+          : '<div class="thumb placeholder">□</div>';
         return `<button class="product-item ${active}" data-select-product="${product.id}">
           ${image}
           <div class="product-meta">
             <div class="product-sku">${escapeHtml(product.sku || '未命名 SKU')}</div>
             <div class="product-asin">${escapeHtml(product.asin || '未填写 ASIN')}</div>
-            <div class="product-counts"><span class="mini-chip">关键词 ${product.keywords.length}</span><span class="mini-chip">否定词 ${product.negatives.length}</span></div>
+            <div class="product-counts">关键词 ${product.keywords.length} · 否定词 ${product.negatives.length}</div>
           </div>
         </button>`;
       }).join('');
     }
 
+    function setMainView(view) {
+      mainView = ['overview','keywords','negatives'].includes(view) ? view : 'overview';
+      renderMain();
+    }
+
     function renderMain() {
       const main = $('#main');
       const product = selectedProduct();
+
       if (!product) {
-        main.innerHTML = `<section class="panel welcome">
+        main.innerHTML = `<div class="welcome">
           <div class="welcome-card">
-            <div class="mark">K</div>
-            <h2>选择一个商品</h2>
-            <p>左侧负责店铺和商品导航；右侧只展示当前商品数据。新建与编辑统一在独立窗口完成。</p>
+            <div class="welcome-mark">K</div>
+            <h2>选择一个商品开始</h2>
+            <p>左侧用于店铺与商品导航；右侧专注查看数据。所有新增和编辑都在独立编辑器中完成。</p>
           </div>
-        </section>`;
+        </div>`;
         return;
       }
 
+      const store = currentStore();
+      const viewTitle = product.sku || product.asin || '未命名商品';
       const imageContent = product.image
         ? `<img src="${product.image}" alt="产品图片" />`
         : '<div class="image-empty">暂无商品图片</div>';
 
-      main.innerHTML = `
-        <section class="topbar">
-          <div class="title">
-            <div class="eyebrow">Product Detail</div>
-            <h2>${escapeHtml(product.sku || product.asin || '未命名商品')}</h2>
-            <div>${escapeHtml(currentStore()?.name || '未命名店铺')} · ${escapeHtml(product.asin || '未填写 ASIN')}</div>
+      const overview = `<div class="content-view">
+        <div class="overview-layout">
+          <div class="product-visual">
+            <div class="product-image">${imageContent}</div>
           </div>
-        </section>
-
-        <section class="panel">
-          <div class="product-hero">
-            <div class="image-box">${imageContent}</div>
-            <div class="product-info">
-              <div class="product-name-line">
-                <h3>${escapeHtml(product.sku || '未填写 SKU')}</h3>
-                <span class="cloud-badge"><span class="cloud-dot"></span>Cloudflare 已同步</span>
+          <div class="overview-main">
+            <h3 class="overview-heading">商品概览</h3>
+            <div class="field-grid">
+              <div class="readonly-field">
+                <div class="readonly-label">SKU</div>
+                <div class="readonly-value">${escapeHtml(product.sku || '—')}</div>
               </div>
-              <div class="readonly-grid">
-                <div class="readonly-field">
-                  <div class="readonly-label">SKU</div>
-                  <div class="readonly-value">${escapeHtml(product.sku || '—')}</div>
-                </div>
-                <div class="readonly-field">
-                  <div class="readonly-label">ASIN</div>
-                  <div class="readonly-value">${escapeHtml(product.asin || '—')}</div>
-                </div>
-              </div>
-              <div class="stats">
-                <div class="stat"><div class="stat-label">关键词</div><b>${product.keywords.length}</b></div>
-                <div class="stat"><div class="stat-label">否定词</div><b>${product.negatives.length}</b></div>
-                <div class="stat"><div class="stat-label">已设置 Bid</div><b>${countBids(product)}</b></div>
+              <div class="readonly-field">
+                <div class="readonly-label">ASIN</div>
+                <div class="readonly-value">${escapeHtml(product.asin || '—')}</div>
               </div>
             </div>
-          </div>
-        </section>
-
-        <section class="panel">
-          <div class="panel-head">
-            <div>
-              <div class="panel-title">关键词</div>
-              <div class="panel-sub">当前商品的 Exact / Phrase / Broad 出价概览</div>
+            <div class="metric-grid">
+              <div class="metric"><div class="metric-label">关键词</div><div class="metric-value">${product.keywords.length}</div></div>
+              <div class="metric"><div class="metric-label">否定词</div><div class="metric-value">${product.negatives.length}</div></div>
+              <div class="metric"><div class="metric-label">已设置 Bid</div><div class="metric-value">${countBids(product)}</div></div>
             </div>
           </div>
-          ${renderKeywordTable(product)}
-        </section>
+        </div>
+      </div>`;
 
-        <section class="panel">
-          <div class="panel-head">
-            <div>
-              <div class="panel-title">否定词</div>
-              <div class="panel-sub">当前商品的 Negative Exact / Negative Phrase</div>
-            </div>
+      const keywords = `<div class="content-view">
+        <div class="section-header">
+          <div>
+            <div class="section-title">关键词</div>
+            <div class="section-sub">Exact / Phrase / Broad Bid 只读视图</div>
           </div>
-          ${renderNegativeTable(product)}
-        </section>`;
+        </div>
+        <div class="data-surface">${renderKeywordTable(product)}</div>
+      </div>`;
+
+      const negatives = `<div class="content-view">
+        <div class="section-header">
+          <div>
+            <div class="section-title">否定词</div>
+            <div class="section-sub">Negative Exact / Negative Phrase 只读视图</div>
+          </div>
+        </div>
+        <div class="data-surface">${renderNegativeTable(product)}</div>
+      </div>`;
+
+      main.innerHTML = `<div class="workspace-inner">
+        <header class="workspace-header">
+          <div>
+            <div class="breadcrumb">${escapeHtml(store?.name || '未命名店铺')} / Product</div>
+            <h1 class="workspace-title">${escapeHtml(viewTitle)}</h1>
+            <div class="workspace-meta">${escapeHtml(product.asin || '未填写 ASIN')}</div>
+          </div>
+          <div class="cloud-state">Cloudflare R2</div>
+        </header>
+
+        <nav class="view-tabs" aria-label="商品数据视图">
+          <button class="view-tab ${mainView === 'overview' ? 'active' : ''}" data-main-view="overview">概览</button>
+          <button class="view-tab ${mainView === 'keywords' ? 'active' : ''}" data-main-view="keywords">关键词 <span class="tab-count">${product.keywords.length}</span></button>
+          <button class="view-tab ${mainView === 'negatives' ? 'active' : ''}" data-main-view="negatives">否定词 <span class="tab-count">${product.negatives.length}</span></button>
+        </nav>
+
+        ${mainView === 'keywords' ? keywords : mainView === 'negatives' ? negatives : overview}
+      </div>`;
     }
 
     function countBids(product) {
@@ -914,33 +1030,6 @@
     }
 
     function bindDynamicInputs() {}
-
-    function updateProductHeaderAndSidebar() {
-      renderSidebar();
-      const product = selectedProduct();
-      const title = document.querySelector('.topbar .title h2');
-      const sub = document.querySelector('.topbar .title div');
-      if (title) title.textContent = product?.sku || '未命名 SKU';
-      if (sub) sub.textContent = `${currentStore()?.name || '未命名店铺'} · ${product?.asin || '未填写 ASIN'} · 自动保存到 Cloudflare`;
-    }
-
-    function addKeyword() {
-      const product = selectedProduct();
-      if (!product) return;
-      product.keywords.push({ id: uid(), term: '', exact: '', phrase: '', broad: '' });
-      saveSoon();
-      render();
-      requestAnimationFrame(() => document.querySelector('[data-keyword-row]:last-child [data-k-field="term"]')?.focus());
-    }
-
-    function addNegative() {
-      const product = selectedProduct();
-      if (!product) return;
-      product.negatives.push({ id: uid(), term: '', exact: false, phrase: true });
-      saveSoon();
-      render();
-      requestAnimationFrame(() => document.querySelector('[data-negative-row]:last-child [data-n-field="term"]')?.focus());
-    }
 
     function deleteProduct() {
       const product = selectedProduct();
@@ -1023,42 +1112,6 @@
     async function uploadDataImage(product, dataUrl) {
       const blob = await (await fetch(dataUrl)).blob();
       await uploadImageBlob(product, blob);
-    }
-
-    async function handleImage(file) {
-      const product = selectedProduct();
-      if (!product || !file) return;
-      if (!file.type.startsWith('image/')) return toast('请选择图片文件');
-      try {
-        const dataUrl = await compressImage(file);
-        const blob = await (await fetch(dataUrl)).blob();
-        await uploadImageBlob(product, blob);
-        render();
-        toast('图片已上传到 Cloudflare R2');
-      } catch (error) {
-        console.error(error);
-        toast(error.message || '图片处理失败');
-      }
-    }
-
-    async function removeProductImage() {
-      const product = selectedProduct();
-      if (!product) return;
-      try {
-        const response = await fetch(`${API_BASE}/products/${encodeURIComponent(product.id)}/image`, {
-          method: 'DELETE',
-          headers: { 'accept': 'application/json' }
-        });
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data.error || '图片删除失败');
-        product.image = '';
-        await saveCloudNow();
-        render();
-        toast('R2 图片已删除');
-      } catch (error) {
-        console.error(error);
-        toast(error.message || '图片删除失败');
-      }
     }
 
     function blobToDataUrl(blob) {
@@ -1197,10 +1250,17 @@
         return;
       }
 
+      const viewButton = event.target.closest('[data-main-view]');
+      if (viewButton) {
+        setMainView(viewButton.dataset.mainView);
+        return;
+      }
+
       const productButton = event.target.closest('[data-select-product]');
       if (productButton) {
         const store = currentStore();
         if (store) store.selectedId = productButton.dataset.selectProduct;
+        mainView = 'overview';
         render();
         return;
       }
@@ -1223,6 +1283,15 @@
       const tab = e.target.closest('[data-modal-tab]');
       if (tab) setProductModalTab(tab.dataset.modalTab);
     });
+    $('#storeModalCancelBtn').addEventListener('click', closeStoreModal);
+    $('#storeModalSaveBtn').addEventListener('click', saveStoreModal);
+    $('#storeModal').addEventListener('click', (e) => {
+      if (e.target === $('#storeModal')) closeStoreModal();
+    });
+    $('#storeModalName').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') saveStoreModal();
+    });
+
     $('#productModalCloseBtn').addEventListener('click', closeProductModal);
     $('#productModalCancelBtn').addEventListener('click', closeProductModal);
     $('#productModalSaveBtn').addEventListener('click', saveProductFromModal);
@@ -1284,7 +1353,10 @@
       if (e.target === $('#productModal')) closeProductModal();
     });
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') closeProductModal();
+      if (e.key === 'Escape') {
+        closeProductModal();
+        closeStoreModal();
+      }
     });
     $('#searchInput').addEventListener('input', (e) => {
       state.search = e.target.value.trim();
