@@ -50,3 +50,11 @@ jobs:
 
       - name: Deploy Worker and static assets
         run: npx wrangler deploy
+
+      - name: Smoke test deployed site
+        working-directory: .
+        run: |
+          curl --fail --silent --show-error --retry 5 --retry-delay 2 \
+            https://amazon-keyword-manager.tanshiyuesir.workers.dev/ >/dev/null
+          curl --fail --silent --show-error --retry 5 --retry-delay 2 \
+            https://amazon-keyword-manager.tanshiyuesir.workers.dev/api/health | grep '"ok":true'
