@@ -18,16 +18,14 @@ for (const required of [
   'data-keyword-term',
   'keyword-status confirmed',
   'keyword-status watching',
-  'data-keyword-filter="confirmed"',
-  'data-keyword-filter="watching"',
-  'data-negative-filter="phrase"',
-  'data-negative-filter="exact"',
-  'keyword-overview-line',
-  'keyword-bid-side',
   'id="productModalBulkKeywordBtn"',
   'id="bulkKeywordModal"',
   'id="bulkKeywordInput"',
   'id="bulkKeywordImportBtn"',
+  'overview-mini-table',
+  '确认关键词',
+  '待观察关键词',
+  '否定关键词',
   'name="bulkKeywordStatus" value="watching"',
   'name="bulkKeywordStatus" value="confirmed"'
 ]) {
@@ -343,44 +341,20 @@ mainHtml = elements.get("#main").innerHTML;
 if (!mainHtml.includes("overview-layout") || !mainHtml.includes("Cloudflare R2")) {
   throw new Error("Rebuilt read-only workspace is missing");
 }
-if (!mainHtml.includes("关键词") || !mainHtml.includes("否定关键词")) {
-  throw new Error("Overview must show keyword and negative keyword columns");
+if (!mainHtml.includes("确认关键词") || !mainHtml.includes("待观察关键词") || !mainHtml.includes("否定关键词")) {
+  throw new Error("Overview must show confirmed, watching, and negative keyword tables");
 }
-if (!mainHtml.includes('data-keyword-term') || !mainHtml.includes("确认")) {
-  throw new Error("Overview keyword term/status structure is missing");
+if (!mainHtml.includes("overview-mini-table") || !mainHtml.includes("Exact") || !mainHtml.includes("Phrase") || !mainHtml.includes("Broad")) {
+  throw new Error("Overview keyword tables are missing expected columns");
 }
-if (!mainHtml.includes("keyword-overview-line") || !mainHtml.includes("keyword-bid-side")) {
-  throw new Error("Keyword Bid must stay on the same right-side row");
+if (!mainHtml.includes('data-keyword-term')) {
+  throw new Error("Overview keyword term-only selection structure is missing");
 }
-if (!mainHtml.includes('data-keyword-filter="confirmed"') || !mainHtml.includes('data-keyword-filter="watching"')) {
-  throw new Error("Keyword status filters are missing");
+if (!mainHtml.includes("Reading Glasses for Women") || !mainHtml.includes("fashion readers")) {
+  throw new Error("Confirmed/watching keyword rows are missing");
 }
-if (!mainHtml.includes('data-negative-filter="phrase"') || !mainHtml.includes('data-negative-filter="exact"')) {
-  throw new Error("Negative phrase/exact filters are missing");
-}
-
-vm.runInContext("keywordOverviewFilter = 'confirmed'; renderMain()", context);
-mainHtml = elements.get("#main").innerHTML;
-if (!mainHtml.includes("Reading Glasses for Women") || !mainHtml.includes("确认")) {
-  throw new Error("Confirmed keyword filter failed");
-}
-
-vm.runInContext("keywordOverviewFilter = 'watching'; renderMain()", context);
-mainHtml = elements.get("#main").innerHTML;
-if (mainHtml.includes("Reading Glasses for Women")) {
-  throw new Error("Watching keyword filter should exclude confirmed keyword");
-}
-
-vm.runInContext("negativeOverviewFilter = 'phrase'; renderMain()", context);
-mainHtml = elements.get("#main").innerHTML;
 if (!mainHtml.includes("kids") || !mainHtml.includes("词组")) {
-  throw new Error("Negative phrase filter failed");
+  throw new Error("Negative keyword table or match mode is missing");
 }
 
-vm.runInContext("negativeOverviewFilter = 'exact'; renderMain()", context);
-mainHtml = elements.get("#main").innerHTML;
-if (mainHtml.includes(">kids<")) {
-  throw new Error("Negative exact filter should exclude phrase-only negative");
-}
-
-console.log("Frontend UI/runtime smoke test passed: immediate-close background save, bulk import, filters, verified R2 persistence");
+console.log("Frontend UI/runtime smoke test passed: three overview keyword tables, immediate-close background save, bulk import, verified R2 persistence");
