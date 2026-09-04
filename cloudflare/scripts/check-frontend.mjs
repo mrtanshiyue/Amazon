@@ -6,6 +6,20 @@ const html = readFileSync(new URL("../public/index.html", import.meta.url), "utf
 const match = html.match(/<script>([\s\S]*?)<\/script>/);
 if (!match) throw new Error("Frontend script not found");
 
+for (const required of [
+  'id="editProductBtn"',
+  'id="themeGlobalBtn"',
+  'data-modal-tab="info"',
+  'data-modal-tab="keywords"',
+  'data-modal-tab="negatives"',
+  'class="product-list-wrap"'
+]) {
+  if (!html.includes(required)) throw new Error(`Missing UI structure: ${required}`);
+}
+if (html.includes('data-action="add-keyword"') || html.includes('id="skuInput"')) {
+  throw new Error("Right-side editing controls must not return");
+}
+
 class FakeElement {
   constructor() {
     this.innerHTML = "";
@@ -171,4 +185,8 @@ if (!mainHtml.includes("YS005-EDIT") || !mainHtml.includes("$ 1.35")) {
   throw new Error("Edited product is not reflected in read-only detail panel");
 }
 
-console.log("Frontend runtime smoke test passed: create/edit modal, keyword editing, sidebar selection, read-only right panel");
+if (!mainHtml.includes("product-hero") || !mainHtml.includes("Cloudflare 已同步")) {
+  throw new Error("Read-only dashboard hero is missing");
+}
+
+console.log("Frontend UI/runtime smoke test passed: navigation, tabbed modal editing, read-only dashboard");
