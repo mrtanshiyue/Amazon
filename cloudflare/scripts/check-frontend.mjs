@@ -14,7 +14,10 @@ for (const required of [
   'data-modal-tab="negatives"',
   'class="product-nav"',
   'id="storeModal"',
-  'data-main-view="overview"'
+  'data-main-view="overview"',
+  'data-keyword-term',
+  'keyword-status confirmed',
+  'keyword-status watching'
 ]) {
   if (!html.includes(required)) throw new Error(`Missing UI structure: ${required}`);
 }
@@ -239,5 +242,11 @@ mainHtml = elements.get("#main").innerHTML;
 if (!mainHtml.includes("overview-layout") || !mainHtml.includes("Cloudflare R2")) {
   throw new Error("Rebuilt read-only workspace is missing");
 }
+if (!mainHtml.includes("关键词") || !mainHtml.includes("否定关键词")) {
+  throw new Error("Overview must show keyword and negative keyword columns");
+}
+if (!mainHtml.includes('data-keyword-term') || !mainHtml.includes("确认")) {
+  throw new Error("Overview keyword term/status structure is missing");
+}
 
-console.log("Frontend UI/runtime smoke test passed: verified R2 saves, keyword watching/confirmed labels, transactional editing, read-only views");
+console.log("Frontend UI/runtime smoke test passed: verified R2 saves, dual keyword/negative overview, term-only selection structure, labels, transactional editing");
