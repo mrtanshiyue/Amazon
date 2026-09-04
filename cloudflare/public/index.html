@@ -186,6 +186,17 @@
     const API_BASE = '/api';
     let stateVersion = '';
 
+    const state = {
+      stores: [],
+      selectedStoreId: null,
+      search: ''
+    };
+
+    const $ = (selector) => document.querySelector(selector);
+    const uid = () => crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
     async function apiJson(path, options = {}) {
       const response = await fetch(`${API_BASE}${path}`, {
         ...options,
