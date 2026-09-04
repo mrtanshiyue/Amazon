@@ -155,6 +155,7 @@ function validateState(payload) {
         keywords: rawKeywords.map(rawRow => ({
           id: cleanId(rawRow?.id),
           term: cleanText(rawRow?.term, 500),
+          status: cleanKeywordStatus(rawRow?.status),
           exact: cleanBid(rawRow?.exact),
           phrase: cleanBid(rawRow?.phrase),
           broad: cleanBid(rawRow?.broad)
@@ -254,6 +255,10 @@ function cleanId(value) {
 
 function cleanText(value, max) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
+}
+
+function cleanKeywordStatus(value) {
+  return value === "confirmed" ? "confirmed" : "watching";
 }
 
 function cleanBid(value) {
