@@ -1335,6 +1335,7 @@
 
       const renderKeywordOverviewRows = rows => rows.map(row => `<tr>
         <td class="kw-col"><span class="keyword-term-select" data-keyword-term>${escapeHtml(row.term || '未命名关键词')}</span></td>
+        <td>${keywordTypeBadge(row)}</td>
         <td class="bid-col">${row.exact === '' ? '—' : '$' + escapeHtml(row.exact)}</td>
         <td class="bid-col">${row.phrase === '' ? '—' : '$' + escapeHtml(row.phrase)}</td>
         <td class="bid-col">${row.broad === '' ? '—' : '$' + escapeHtml(row.broad)}</td>
