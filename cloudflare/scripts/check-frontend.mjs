@@ -11,9 +11,13 @@ class FakeElement {
     this.innerHTML = "";
     this.value = "";
     this.dataset = {};
+    this.textContent = "";
+    this.disabled = false;
+    this.attributes = {};
     this.classList = { add() {}, remove() {} };
   }
   addEventListener() {}
+  setAttribute(name, value) { this.attributes[name] = String(value); }
   click() {}
   focus() {}
 }
@@ -28,6 +32,16 @@ const elements = new Map([
   ["#importBtn", new FakeElement()],
   ["#importFile", new FakeElement()],
   ["#imageFile", new FakeElement()],
+  ["#productModal", new FakeElement()],
+  ["#productModalCloseBtn", new FakeElement()],
+  ["#productModalCancelBtn", new FakeElement()],
+  ["#productModalSaveBtn", new FakeElement()],
+  ["#productModalChooseImageBtn", new FakeElement()],
+  ["#productModalRemoveImageBtn", new FakeElement()],
+  ["#productModalImageFile", new FakeElement()],
+  ["#productModalImagePreview", new FakeElement()],
+  ["#productModalSku", new FakeElement()],
+  ["#productModalAsin", new FakeElement()],
   ["#toast", new FakeElement()]
 ]);
 
@@ -105,7 +119,25 @@ const storesAfterAdd = vm.runInContext("state.stores.length", context);
 if (storesAfterAdd !== 2) throw new Error(`Add store failed: ${storesAfterAdd}`);
 
 vm.runInContext("newProduct()", context);
-const productsAfterAdd = vm.runInContext("currentStore().products.length", context);
-if (productsAfterAdd !== 1) throw new Error(`Add product failed: ${productsAfterAdd}`);
+const productsBeforeSave = vm.runInContext("currentStore().products.length", context);
+if (productsBeforeSave !== 0) throw new Error(`Modal should not create product before save: ${productsBeforeSave}`);
 
-console.log("Frontend runtime smoke test passed: init, addStore, newProduct");
+elements.get("#productModalSku").value = "YS005";
+elements.get("#productModalAsin").value = "B0TEST1234";
+await vm.runInContext("saveNewProductFromModal()", context);
+
+const productsAfterSave = vm.runInContext("currentStore().products.length", context);
+if (productsAfterSave !== 1) throw new Error(`Save product failed: ${productsAfterSave}`);
+
+const selectedSku = vm.runInContext("selectedProduct().sku", context);
+if (selectedSku !== "YS005") throw new Error(`Selected product mismatch: ${selectedSku}`);
+
+const sidebarHtml = elements.get("#productList").innerHTML;
+if (!sidebarHtml.includes("YS005")) throw new Error("Saved product is missing from left sidebar");
+
+const mainHtml = elements.get("#main").innerHTML;
+if (!mainHtml.includes("YS005") || !mainHtml.includes("B0TEST1234")) {
+  throw new Error("Selected product data is missing from right panel");
+}
+
+console.log("Frontend runtime smoke test passed: modal open, save product, sidebar selection, right panel display");
