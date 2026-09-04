@@ -27,7 +27,9 @@ for (const required of [
   'id="productModalBulkKeywordBtn"',
   'id="bulkKeywordModal"',
   'id="bulkKeywordInput"',
-  'id="bulkKeywordImportBtn"'
+  'id="bulkKeywordImportBtn"',
+  'name="bulkKeywordStatus" value="watching"',
+  'name="bulkKeywordStatus" value="confirmed"'
 ]) {
   if (!html.includes(required)) throw new Error(`Missing UI structure: ${required}`);
 }
@@ -42,6 +44,7 @@ class FakeElement {
     this.dataset = {};
     this.textContent = "";
     this.disabled = false;
+    this.checked = false;
     this.attributes = {};
     this.classList = { add() {}, remove() {}, toggle() {} };
   }
@@ -99,9 +102,21 @@ const elements = new Map([
   ["#toast", new FakeElement()]
 ]);
 
+const bulkStatusWatching = new FakeElement();
+bulkStatusWatching.value = "watching";
+bulkStatusWatching.checked = true;
+const bulkStatusConfirmed = new FakeElement();
+bulkStatusConfirmed.value = "confirmed";
+bulkStatusConfirmed.checked = false;
+
 const document = {
   documentElement: { dataset: {} },
   querySelector(selector) {
+    if (selector === 'input[name="bulkKeywordStatus"][value="watching"]') return bulkStatusWatching;
+    if (selector === 'input[name="bulkKeywordStatus"][value="confirmed"]') return bulkStatusConfirmed;
+    if (selector === 'input[name="bulkKeywordStatus"]:checked') {
+      return bulkStatusConfirmed.checked ? bulkStatusConfirmed : bulkStatusWatching;
+    }
     return elements.get(selector) || new FakeElement();
   },
   querySelectorAll() { return []; },
@@ -217,6 +232,29 @@ const importedStatuses = vm.runInContext(
 if (importedStatuses.some(status => status !== "watching")) {
   throw new Error("Bulk imported keywords must default to watching");
 }
+
+bulkStatusWatching.checked = false;
+bulkStatusConfirmed.checked = true;
+elements.get("#bulkKeywordInput").value = [
+  "fashion readers",
+  "Reading Glasses for Women"
+].join("\n");
+vm.runInContext("importBulkKeywords()", context);
+
+const confirmedImported = vm.runInContext(
+  "productModalDraft.keywords.find(row => row.term === 'fashion readers')?.status",
+  context
+);
+if (confirmedImported !== "confirmed") {
+  throw new Error(`Bulk confirmed status failed: ${confirmedImported}`);
+}
+const existingStatusAfterConfirmedImport = vm.runInContext(
+  "productModalDraft.keywords.find(row => row.term === 'Reading Glasses for Women')?.status",
+  context
+);
+if (existingStatusAfterConfirmedImport !== "watching") {
+  throw new Error("Bulk import must not modify an existing keyword status");
+}
 vm.runInContext("addModalNegative()", context);
 vm.runInContext("productModalDraft.negatives[0].term = 'kids'; productModalDraft.negatives[0].phrase = true", context);
 
@@ -234,8 +272,15 @@ const persistedBulkTerms = cloudState.stores
   .flatMap(store => store.products || [])
   .flatMap(product => product.keywords || [])
   .map(row => row.term);
-if (!persistedBulkTerms.includes("Blue Light Readers") || !persistedBulkTerms.includes("computer readers")) {
+if (!persistedBulkTerms.includes("Blue Light Readers") || !persistedBulkTerms.includes("computer readers") || !persistedBulkTerms.includes("fashion readers")) {
   throw new Error("Bulk imported keywords did not persist to cloud state");
+}
+const persistedFashionStatus = cloudState.stores
+  .flatMap(store => store.products || [])
+  .flatMap(product => product.keywords || [])
+  .find(row => row.term === "fashion readers")?.status;
+if (persistedFashionStatus !== "confirmed") {
+  throw new Error(`Confirmed bulk import did not persist: ${persistedFashionStatus}`);
 }
 
 let sidebarHtml = elements.get("#productList").innerHTML;
@@ -328,4 +373,4 @@ if (mainHtml.includes(">kids<")) {
   throw new Error("Negative exact filter should exclude phrase-only negative");
 }
 
-console.log("Frontend UI/runtime smoke test passed: bulk keyword import/dedupe, right-side Bid layout, filters, term-only selection, verified R2 persistence");
+console.log("Frontend UI/runtime smoke test passed: bulk watching/confirmed import, dedupe, right-side Bid layout, filters, verified R2 persistence");
