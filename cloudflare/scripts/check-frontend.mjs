@@ -12,7 +12,9 @@ for (const required of [
   'data-modal-tab="info"',
   'data-modal-tab="keywords"',
   'data-modal-tab="negatives"',
-  'class="product-list-wrap"'
+  'class="product-nav"',
+  'id="storeModal"',
+  'data-main-view="overview"'
 ]) {
   if (!html.includes(required)) throw new Error(`Missing UI structure: ${required}`);
 }
@@ -34,12 +36,15 @@ class FakeElement {
   setAttribute(name, value) { this.attributes[name] = String(value); }
   click() {}
   focus() {}
+  select() {}
 }
 
 const elements = new Map([
   ["#storeSelect", new FakeElement()],
   ["#addProductBtn", new FakeElement()],
   ["#editProductBtn", new FakeElement()],
+  ["#themeGlobalBtn", new FakeElement()],
+  ["#productNavCount", new FakeElement()],
   ["#searchInput", new FakeElement()],
   ["#productList", new FakeElement()],
   ["#main", new FakeElement()],
@@ -48,7 +53,10 @@ const elements = new Map([
   ["#importFile", new FakeElement()],
   ["#imageFile", new FakeElement()],
   ["#productModal", new FakeElement()],
+  ["#productModalTabs", new FakeElement()],
   ["#productModalTitle", new FakeElement()],
+  ["#modalKeywordCount", new FakeElement()],
+  ["#modalNegativeCount", new FakeElement()],
   ["#productModalCloseBtn", new FakeElement()],
   ["#productModalCancelBtn", new FakeElement()],
   ["#productModalSaveBtn", new FakeElement()],
@@ -63,6 +71,12 @@ const elements = new Map([
   ["#productModalImagePreview", new FakeElement()],
   ["#productModalSku", new FakeElement()],
   ["#productModalAsin", new FakeElement()],
+  ["#storeModal", new FakeElement()],
+  ["#storeModalTitle", new FakeElement()],
+  ["#storeModalSub", new FakeElement()],
+  ["#storeModalName", new FakeElement()],
+  ["#storeModalCancelBtn", new FakeElement()],
+  ["#storeModalSaveBtn", new FakeElement()],
   ["#toast", new FakeElement()]
 ]);
 
@@ -136,8 +150,12 @@ const initialStores = vm.runInContext("state.stores.length", context);
 if (initialStores !== 1) throw new Error(`Expected 1 initialized store, got ${initialStores}`);
 
 vm.runInContext("addStore()", context);
+elements.get("#storeModalName").value = "Store 02";
+await vm.runInContext("saveStoreModal()", context);
 const storesAfterAdd = vm.runInContext("state.stores.length", context);
 if (storesAfterAdd !== 2) throw new Error(`Add store failed: ${storesAfterAdd}`);
+const activeStoreName = vm.runInContext("currentStore().name", context);
+if (activeStoreName !== "Store 02") throw new Error(`Store modal save failed: ${activeStoreName}`);
 
 vm.runInContext("newProduct()", context);
 const productsBeforeSave = vm.runInContext("currentStore().products.length", context);
@@ -162,14 +180,23 @@ let sidebarHtml = elements.get("#productList").innerHTML;
 if (!sidebarHtml.includes("YS005")) throw new Error("Saved product is missing from left sidebar");
 
 let mainHtml = elements.get("#main").innerHTML;
-if (!mainHtml.includes("YS005") || !mainHtml.includes("B0TEST1234")) {
-  throw new Error("Selected product data is missing from right panel");
-}
-if (!mainHtml.includes("Reading Glasses for Women") || !mainHtml.includes("kids")) {
-  throw new Error("Keyword or negative keyword missing from right read-only panel");
+if (!mainHtml.includes("YS005") || !mainHtml.includes("B0TEST1234") || !mainHtml.includes("overview-layout")) {
+  throw new Error("Selected product overview is missing from right workspace");
 }
 if (mainHtml.includes("<input") || mainHtml.includes("添加关键词") || mainHtml.includes("添加否定词")) {
-  throw new Error("Right panel must be read-only");
+  throw new Error("Right workspace must be read-only");
+}
+
+vm.runInContext("setMainView('keywords')", context);
+mainHtml = elements.get("#main").innerHTML;
+if (!mainHtml.includes("Reading Glasses for Women") || !mainHtml.includes("$ 1.25")) {
+  throw new Error("Keyword read-only view is missing");
+}
+
+vm.runInContext("setMainView('negatives')", context);
+mainHtml = elements.get("#main").innerHTML;
+if (!mainHtml.includes("kids") || !mainHtml.includes("Negative Phrase")) {
+  throw new Error("Negative keyword read-only view is missing");
 }
 
 vm.runInContext("editCurrentProduct()", context);
@@ -180,13 +207,16 @@ await vm.runInContext("saveProductFromModal()", context);
 const editedSku = vm.runInContext("selectedProduct().sku", context);
 if (editedSku !== "YS005-EDIT") throw new Error(`Edit product failed: ${editedSku}`);
 
+vm.runInContext("setMainView('keywords')", context);
 mainHtml = elements.get("#main").innerHTML;
 if (!mainHtml.includes("YS005-EDIT") || !mainHtml.includes("$ 1.35")) {
-  throw new Error("Edited product is not reflected in read-only detail panel");
+  throw new Error("Edited product is not reflected in keyword read-only view");
 }
 
-if (!mainHtml.includes("product-hero") || !mainHtml.includes("Cloudflare 已同步")) {
-  throw new Error("Read-only dashboard hero is missing");
+vm.runInContext("setMainView('overview')", context);
+mainHtml = elements.get("#main").innerHTML;
+if (!mainHtml.includes("overview-layout") || !mainHtml.includes("Cloudflare R2")) {
+  throw new Error("Rebuilt read-only workspace is missing");
 }
 
-console.log("Frontend UI/runtime smoke test passed: navigation, tabbed modal editing, read-only dashboard");
+console.log("Frontend UI/runtime smoke test passed: store modal, product editor, workspace tabs, read-only views");
