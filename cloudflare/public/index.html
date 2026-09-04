@@ -1287,6 +1287,12 @@
       toast(ok ? `已复制 ${cleaned.length} 个关键词` : '复制失败，请重试');
     }
 
+    function keywordTypeBadge(row) {
+      if (row?.type === 'core') return '<span class="keyword-type core">核心词</span>';
+      if (row?.type === 'longtail') return '<span class="keyword-type longtail">长尾词</span>';
+      return '—';
+    }
+
     function setMainView(view) {
       mainView = ['overview','keywords','negatives'].includes(view) ? view : 'overview';
       renderMain();
