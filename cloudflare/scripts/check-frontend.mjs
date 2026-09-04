@@ -174,6 +174,8 @@ if (productsBeforeSave !== 0) throw new Error(`Modal should not create product b
 
 vm.runInContext("addModalKeyword()", context);
 vm.runInContext("productModalDraft.keywords[0].term = 'Reading Glasses for Women'; productModalDraft.keywords[0].exact = 1.25", context);
+const defaultKeywordStatus = vm.runInContext("productModalDraft.keywords[0].status", context);
+if (defaultKeywordStatus !== "watching") throw new Error(`New keyword default status should be watching, got ${defaultKeywordStatus}`);
 vm.runInContext("addModalNegative()", context);
 vm.runInContext("productModalDraft.negatives[0].term = 'kids'; productModalDraft.negatives[0].phrase = true", context);
 
@@ -200,8 +202,8 @@ if (mainHtml.includes("<input") || mainHtml.includes("添加关键词") || mainH
 
 vm.runInContext("setMainView('keywords')", context);
 mainHtml = elements.get("#main").innerHTML;
-if (!mainHtml.includes("Reading Glasses for Women") || !mainHtml.includes("$ 1.25")) {
-  throw new Error("Keyword read-only view is missing");
+if (!mainHtml.includes("Reading Glasses for Women") || !mainHtml.includes("$ 1.25") || !mainHtml.includes("待观察")) {
+  throw new Error("Keyword read-only view or watching label is missing");
 }
 
 vm.runInContext("setMainView('negatives')", context);
@@ -212,7 +214,7 @@ if (!mainHtml.includes("kids") || !mainHtml.includes("Negative Phrase")) {
 
 vm.runInContext("editCurrentProduct()", context);
 elements.get("#productModalSku").value = "YS005-EDIT";
-vm.runInContext("productModalDraft.keywords[0].phrase = 1.35", context);
+vm.runInContext("productModalDraft.keywords[0].phrase = 1.35; productModalDraft.keywords[0].status = 'confirmed'", context);
 await vm.runInContext("saveProductFromModal()", context);
 
 const editedSku = vm.runInContext("selectedProduct().sku", context);
@@ -220,8 +222,16 @@ if (editedSku !== "YS005-EDIT") throw new Error(`Edit product failed: ${editedSk
 
 vm.runInContext("setMainView('keywords')", context);
 mainHtml = elements.get("#main").innerHTML;
-if (!mainHtml.includes("YS005-EDIT") || !mainHtml.includes("$ 1.35")) {
-  throw new Error("Edited product is not reflected in keyword read-only view");
+if (!mainHtml.includes("YS005-EDIT") || !mainHtml.includes("$ 1.35") || !mainHtml.includes("确认")) {
+  throw new Error("Edited product or confirmed keyword label is not reflected in keyword read-only view");
+}
+
+const persistedKeywordStatus = cloudState.stores
+  .flatMap(store => store.products || [])
+  .flatMap(product => product.keywords || [])
+  .find(row => row.term === "Reading Glasses for Women")?.status;
+if (persistedKeywordStatus !== "confirmed") {
+  throw new Error(`Keyword status did not persist to cloud state: ${persistedKeywordStatus}`);
 }
 
 vm.runInContext("setMainView('overview')", context);
@@ -230,4 +240,4 @@ if (!mainHtml.includes("overview-layout") || !mainHtml.includes("Cloudflare R2")
   throw new Error("Rebuilt read-only workspace is missing");
 }
 
-console.log("Frontend UI/runtime smoke test passed: serialized verified R2 saves, transactional store/product editing, read-only views");
+console.log("Frontend UI/runtime smoke test passed: verified R2 saves, keyword watching/confirmed labels, transactional editing, read-only views");
