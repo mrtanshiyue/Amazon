@@ -31,8 +31,14 @@ for (const required of [
   'data-keyword-filter="watching"',
   'data-negative-filter="phrase"',
   'data-negative-filter="exact"',
+  'data-keyword-type-filter="core"',
+  'data-keyword-type-filter="longtail"',
+  'keyword-type core',
+  'keyword-type longtail',
   'name="bulkKeywordStatus" value="watching"',
   'name="bulkKeywordStatus" value="confirmed"',
+  'name="bulkKeywordType" value="core"',
+  'name="bulkKeywordType" value="longtail"',
   'data-copy-group="confirmed"',
   'data-copy-group="watching"',
   'data-copy-group="negative"'
@@ -115,6 +121,16 @@ const bulkStatusConfirmed = new FakeElement();
 bulkStatusConfirmed.value = "confirmed";
 bulkStatusConfirmed.checked = false;
 
+const bulkTypeNone = new FakeElement();
+bulkTypeNone.value = "";
+bulkTypeNone.checked = true;
+const bulkTypeCore = new FakeElement();
+bulkTypeCore.value = "core";
+bulkTypeCore.checked = false;
+const bulkTypeLongtail = new FakeElement();
+bulkTypeLongtail.value = "longtail";
+bulkTypeLongtail.checked = false;
+
 const document = {
   documentElement: { dataset: {} },
   querySelector(selector) {
@@ -122,6 +138,14 @@ const document = {
     if (selector === 'input[name="bulkKeywordStatus"][value="confirmed"]') return bulkStatusConfirmed;
     if (selector === 'input[name="bulkKeywordStatus"]:checked') {
       return bulkStatusConfirmed.checked ? bulkStatusConfirmed : bulkStatusWatching;
+    }
+    if (selector === 'input[name="bulkKeywordType"][value=""]') return bulkTypeNone;
+    if (selector === 'input[name="bulkKeywordType"][value="core"]') return bulkTypeCore;
+    if (selector === 'input[name="bulkKeywordType"][value="longtail"]') return bulkTypeLongtail;
+    if (selector === 'input[name="bulkKeywordType"]:checked') {
+      if (bulkTypeCore.checked) return bulkTypeCore;
+      if (bulkTypeLongtail.checked) return bulkTypeLongtail;
+      return bulkTypeNone;
     }
     return elements.get(selector) || new FakeElement();
   },
@@ -223,6 +247,8 @@ vm.runInContext("addModalKeyword()", context);
 vm.runInContext("productModalDraft.keywords[0].term = 'Reading Glasses for Women'; productModalDraft.keywords[0].exact = 1.25", context);
 const defaultKeywordStatus = vm.runInContext("productModalDraft.keywords[0].status", context);
 if (defaultKeywordStatus !== "watching") throw new Error(`New keyword default status should be watching, got ${defaultKeywordStatus}`);
+const defaultKeywordType = vm.runInContext("productModalDraft.keywords[0].type", context);
+if (defaultKeywordType !== "") throw new Error(`New keyword default type should be empty, got ${defaultKeywordType}`);
 
 elements.get("#bulkKeywordInput").value = [
   "  Blue   Light Readers  ",
@@ -248,6 +274,8 @@ if (importedStatuses.some(status => status !== "watching")) {
 
 bulkStatusWatching.checked = false;
 bulkStatusConfirmed.checked = true;
+bulkTypeNone.checked = false;
+bulkTypeCore.checked = true;
 elements.get("#bulkKeywordInput").value = [
   "fashion readers",
   "Reading Glasses for Women"
@@ -261,6 +289,14 @@ const confirmedImported = vm.runInContext(
 if (confirmedImported !== "confirmed") {
   throw new Error(`Bulk confirmed status failed: ${confirmedImported}`);
 }
+const confirmedImportedType = vm.runInContext(
+  "productModalDraft.keywords.find(row => row.term === 'fashion readers')?.type",
+  context
+);
+if (confirmedImportedType !== "core") {
+  throw new Error(`Bulk core type failed: ${confirmedImportedType}`);
+}
+vm.runInContext("productModalDraft.keywords.find(row => row.term === 'computer readers').type = 'longtail'", context);
 const existingStatusAfterConfirmedImport = vm.runInContext(
   "productModalDraft.keywords.find(row => row.term === 'Reading Glasses for Women')?.status",
   context
@@ -326,7 +362,7 @@ if (!mainHtml.includes("kids") || !mainHtml.includes("Negative Phrase")) {
 
 vm.runInContext("editCurrentProduct()", context);
 elements.get("#productModalSku").value = "YS005-EDIT";
-vm.runInContext("productModalDraft.keywords[0].phrase = 1.35; productModalDraft.keywords[0].status = 'confirmed'", context);
+vm.runInContext("productModalDraft.keywords[0].phrase = 1.35; productModalDraft.keywords[0].status = 'confirmed'; productModalDraft.keywords[0].type = 'core'", context);
 vm.runInContext("saveProductFromModal()", context);
 
 const editDraftClosedImmediately = vm.runInContext("productModalDraft === null", context);
@@ -343,12 +379,12 @@ if (!mainHtml.includes("YS005-EDIT") || !mainHtml.includes("$ 1.35") || !mainHtm
 
 await new Promise(resolve => setTimeout(resolve, 40));
 
-const persistedKeywordStatus = cloudState.stores
+const persistedKeyword = cloudState.stores
   .flatMap(store => store.products || [])
   .flatMap(product => product.keywords || [])
-  .find(row => row.term === "Reading Glasses for Women")?.status;
-if (persistedKeywordStatus !== "confirmed") {
-  throw new Error(`Keyword status did not persist to cloud state: ${persistedKeywordStatus}`);
+  .find(row => row.term === "Reading Glasses for Women");
+if (persistedKeyword?.status !== "confirmed" || persistedKeyword?.type !== "core") {
+  throw new Error(`Keyword status/type did not persist: ${JSON.stringify(persistedKeyword)}`);
 }
 
 clipboardText = "";
