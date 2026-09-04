@@ -499,7 +499,7 @@
         <div class="mini-dialog-title" id="bulkKeywordTitle">批量导入关键词</div>
         <div class="mini-dialog-sub">一行一个关键词。系统会自动去除空行、合并多余空格，并跳过当前商品中已存在的关键词。</div>
         <div class="bulk-status-block">
-          <div class="bulk-status-label">导入标签</div>
+          <div class="bulk-status-label">状态标签</div>
           <div class="bulk-status-options">
             <label class="bulk-status-option">
               <input type="radio" name="bulkKeywordStatus" value="watching" checked />
@@ -508,6 +508,23 @@
             <label class="bulk-status-option">
               <input type="radio" name="bulkKeywordStatus" value="confirmed" />
               <span>确认</span>
+            </label>
+          </div>
+        </div>
+        <div class="bulk-status-block">
+          <div class="bulk-status-label">关键词类型</div>
+          <div class="bulk-status-options">
+            <label class="bulk-status-option">
+              <input type="radio" name="bulkKeywordType" value="" checked />
+              <span>未分类</span>
+            </label>
+            <label class="bulk-status-option">
+              <input type="radio" name="bulkKeywordType" value="core" />
+              <span>核心词</span>
+            </label>
+            <label class="bulk-status-option">
+              <input type="radio" name="bulkKeywordType" value="longtail" />
+              <span>长尾词</span>
             </label>
           </div>
         </div>
@@ -754,12 +771,17 @@
 
       keywordHost.innerHTML = draft.keywords.length
         ? `<div class="table-wrap"><table>
-            <thead><tr><th>关键词</th><th>标签</th><th>Exact Bid</th><th>Phrase Bid</th><th>Broad Bid</th><th></th></tr></thead>
+            <thead><tr><th>关键词</th><th>状态</th><th>类型</th><th>Exact Bid</th><th>Phrase Bid</th><th>Broad Bid</th><th></th></tr></thead>
             <tbody>${draft.keywords.map(row => `<tr data-modal-keyword-row="${row.id}">
               <td class="term"><input type="text" data-modal-k-field="term" value="${escapeHtml(row.term)}" placeholder="输入关键词" /></td>
               <td><select class="keyword-status-select" data-modal-k-field="status">
                 <option value="watching" ${row.status !== 'confirmed' ? 'selected' : ''}>待观察</option>
                 <option value="confirmed" ${row.status === 'confirmed' ? 'selected' : ''}>确认</option>
+              </select></td>
+              <td><select class="keyword-type-select" data-modal-k-field="type">
+                <option value="" ${!row.type ? 'selected' : ''}>未分类</option>
+                <option value="core" ${row.type === 'core' ? 'selected' : ''}>核心词</option>
+                <option value="longtail" ${row.type === 'longtail' ? 'selected' : ''}>长尾词</option>
               </select></td>
               <td class="bid"><div class="bid-input"><span>$</span><input type="number" min="0" step="0.01" data-modal-k-field="exact" value="${escapeHtml(row.exact)}" placeholder="0.00" /></div></td>
               <td class="bid"><div class="bid-input"><span>$</span><input type="number" min="0" step="0.01" data-modal-k-field="phrase" value="${escapeHtml(row.phrase)}" placeholder="0.00" /></div></td>
@@ -859,6 +881,8 @@
       $('#bulkKeywordInput').value = '';
       const defaultStatus = document.querySelector('input[name="bulkKeywordStatus"][value="watching"]');
       if (defaultStatus) defaultStatus.checked = true;
+      const defaultType = document.querySelector('input[name="bulkKeywordType"][value=""]');
+      if (defaultType) defaultType.checked = true;
       updateBulkKeywordCount();
       const modal = $('#bulkKeywordModal');
       modal.classList.add('open');
@@ -888,6 +912,12 @@
       const selectedStatus = document.querySelector('input[name="bulkKeywordStatus"]:checked')?.value === 'confirmed'
         ? 'confirmed'
         : 'watching';
+      const selectedTypeValue = document.querySelector('input[name="bulkKeywordType"]:checked')?.value;
+      const selectedType = selectedTypeValue === 'core'
+        ? 'core'
+        : selectedTypeValue === 'longtail'
+          ? 'longtail'
+          : '';
 
       let added = 0;
       let skipped = 0;
@@ -902,6 +932,7 @@
           id: uid(),
           term,
           status: selectedStatus,
+          type: selectedType,
           exact: '',
           phrase: '',
           broad: ''
@@ -916,7 +947,7 @@
 
     function addModalKeyword() {
       if (!productModalDraft) return;
-      productModalDraft.keywords.push({ id: uid(), term: '', status: 'watching', exact: '', phrase: '', broad: '' });
+      productModalDraft.keywords.push({ id: uid(), term: '', status: 'watching', type: '', exact: '', phrase: '', broad: '' });
       renderProductModalEditors();
       requestAnimationFrame(() => document.querySelector('[data-modal-keyword-row]:last-child [data-modal-k-field="term"]')?.focus());
     }
@@ -1862,7 +1893,7 @@
         const row = productModalDraft.keywords.find(item => item.id === keywordRow.dataset.modalKeywordRow);
         if (row) {
           const field = e.target.dataset.modalKField;
-          row[field] = field === 'term' || field === 'status'
+          row[field] = field === 'term' || field === 'status' || field === 'type'
             ? e.target.value
             : toNumberOrBlank(e.target.value);
         }
@@ -1879,6 +1910,10 @@
       if (keywordRow && e.target.dataset.modalKField === 'status') {
         const row = productModalDraft.keywords.find(item => item.id === keywordRow.dataset.modalKeywordRow);
         if (row) row.status = e.target.value === 'confirmed' ? 'confirmed' : 'watching';
+      }
+      if (keywordRow && e.target.dataset.modalKField === 'type') {
+        const row = productModalDraft.keywords.find(item => item.id === keywordRow.dataset.modalKeywordRow);
+        if (row) row.type = e.target.value === 'core' ? 'core' : e.target.value === 'longtail' ? 'longtail' : '';
       }
       const negativeRow = e.target.closest('[data-modal-negative-row]');
       if (negativeRow && e.target.dataset.modalNField && e.target.dataset.modalNField !== 'term') {
