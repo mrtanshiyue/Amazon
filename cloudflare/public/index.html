@@ -1183,6 +1183,7 @@
       state.search = '';
       mainView = 'overview';
       keywordOverviewFilter = 'all';
+      keywordTypeOverviewFilter = 'all';
       negativeOverviewFilter = 'all';
       $('#searchInput').value = '';
       render();
@@ -1404,6 +1405,12 @@
                 <button class="overview-filter-chip ${keywordOverviewFilter === 'confirmed' ? 'active' : ''}" type="button" data-keyword-filter="confirmed">确认 ${confirmedKeywords.length}</button>
                 <button class="overview-filter-chip ${keywordOverviewFilter === 'watching' ? 'active' : ''}" type="button" data-keyword-filter="watching">待观察 ${watchingKeywords.length}</button>
               </div>
+              <div class="overview-filter-group" aria-label="关键词类型筛选">
+                <span class="overview-filter-label">类型</span>
+                <button class="overview-filter-chip ${keywordTypeOverviewFilter === 'all' ? 'active' : ''}" type="button" data-keyword-type-filter="all">全部</button>
+                <button class="overview-filter-chip ${keywordTypeOverviewFilter === 'core' ? 'active' : ''}" type="button" data-keyword-type-filter="core">核心词 ${coreKeywordCount}</button>
+                <button class="overview-filter-chip ${keywordTypeOverviewFilter === 'longtail' ? 'active' : ''}" type="button" data-keyword-type-filter="longtail">长尾词 ${longtailKeywordCount}</button>
+              </div>
               <div class="overview-filter-group" aria-label="否定关键词筛选">
                 <span class="overview-filter-label">否定关键词</span>
                 <button class="overview-filter-chip ${negativeOverviewFilter === 'all' ? 'active' : ''}" type="button" data-negative-filter="all">全部</button>
@@ -1425,7 +1432,7 @@
                   </div>
                 </div>
                 ${confirmedKeywords.length ? `<div class="table-wrap"><table class="overview-mini-table">
-                  <thead><tr><th>关键词</th><th>Exact</th><th>Phrase</th><th>Broad</th></tr></thead>
+                  <thead><tr><th>关键词</th><th>类型</th><th>Exact</th><th>Phrase</th><th>Broad</th></tr></thead>
                   <tbody>${renderKeywordOverviewRows(confirmedKeywords)}</tbody>
                 </table></div>` : '<div class="overview-table-empty">暂无确认关键词</div>'}
               </section>` : ''}
@@ -1442,7 +1449,7 @@
                   </div>
                 </div>
                 ${watchingKeywords.length ? `<div class="table-wrap"><table class="overview-mini-table">
-                  <thead><tr><th>关键词</th><th>Exact</th><th>Phrase</th><th>Broad</th></tr></thead>
+                  <thead><tr><th>关键词</th><th>类型</th><th>Exact</th><th>Phrase</th><th>Broad</th></tr></thead>
                   <tbody>${renderKeywordOverviewRows(watchingKeywords)}</tbody>
                 </table></div>` : '<div class="overview-table-empty">暂无待观察关键词</div>'}
               </section>` : ''}
@@ -1816,6 +1823,13 @@
         return;
       }
 
+      const keywordTypeFilterButton = event.target.closest('[data-keyword-type-filter]');
+      if (keywordTypeFilterButton) {
+        keywordTypeOverviewFilter = keywordTypeFilterButton.dataset.keywordTypeFilter;
+        renderMain();
+        return;
+      }
+
       const negativeFilterButton = event.target.closest('[data-negative-filter]');
       if (negativeFilterButton) {
         negativeOverviewFilter = negativeFilterButton.dataset.negativeFilter;
@@ -1841,6 +1855,7 @@
         if (store) store.selectedId = productButton.dataset.selectProduct;
         mainView = 'overview';
         keywordOverviewFilter = 'all';
+        keywordTypeOverviewFilter = 'all';
         negativeOverviewFilter = 'all';
         render();
         return;
