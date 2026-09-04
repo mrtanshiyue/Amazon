@@ -136,6 +136,10 @@
     .overview-table-title{font-size:13.5px;font-weight:820;letter-spacing:-.015em}
     .overview-table-sub{font-size:10px;color:var(--text-3);margin-top:3px}
     .overview-table-count{font-size:10px;color:var(--text-2);background:var(--surface-subtle);border:1px solid var(--border);border-radius:999px;padding:3px 7px;white-space:nowrap}
+    .overview-table-actions{display:flex;align-items:center;gap:6px}
+    .copy-all-btn{height:28px;border:1px solid var(--border);background:var(--surface-subtle);color:var(--text-2);border-radius:8px;padding:0 9px;font-size:10px;font-weight:760;white-space:nowrap}
+    .copy-all-btn:hover{background:var(--surface-hover);color:var(--text)}
+    .copy-all-btn:disabled{opacity:.4;cursor:not-allowed}
     .overview-mini-table{width:100%;border-collapse:collapse;min-width:0}
     .overview-mini-table th,.overview-mini-table td{padding:9px 10px;border-bottom:1px solid var(--border);font-size:11px;vertical-align:middle}
     .overview-mini-table th{background:var(--surface-subtle);color:var(--text-3);font-size:9px;text-transform:uppercase;letter-spacing:.065em;font-weight:820;white-space:nowrap}
@@ -1179,6 +1183,52 @@
       }).join('');
     }
 
+    async function copyTextToClipboard(text) {
+      const value = String(text || '');
+      if (!value) return false;
+
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(value);
+          return true;
+        }
+      } catch (error) {
+        console.warn('Clipboard API failed, falling back', error);
+      }
+
+      const textarea = document.createElement('textarea');
+      textarea.value = value;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      textarea.style.pointerEvents = 'none';
+      document.body.appendChild(textarea);
+      textarea.select();
+      const ok = document.execCommand?.('copy') === true;
+      textarea.remove();
+      return ok;
+    }
+
+    async function copyKeywordGroup(group) {
+      const product = selectedProduct();
+      if (!product) return;
+
+      let terms = [];
+      if (group === 'confirmed') {
+        terms = product.keywords.filter(row => row.status === 'confirmed').map(row => row.term);
+      } else if (group === 'watching') {
+        terms = product.keywords.filter(row => row.status !== 'confirmed').map(row => row.term);
+      } else if (group === 'negative') {
+        terms = product.negatives.map(row => row.term);
+      }
+
+      const cleaned = terms.map(term => String(term || '').trim()).filter(Boolean);
+      if (!cleaned.length) return toast('没有可复制的关键词');
+
+      const ok = await copyTextToClipboard(cleaned.join('\n'));
+      toast(ok ? `已复制 ${cleaned.length} 个关键词` : '复制失败，请重试');
+    }
+
     function setMainView(view) {
       mainView = ['overview','keywords','negatives'].includes(view) ? view : 'overview';
       renderMain();
@@ -1270,7 +1320,10 @@
                     <div class="overview-table-title">确认关键词</div>
                     <div class="overview-table-sub">已确认保留的关键词</div>
                   </div>
-                  <span class="overview-table-count">${confirmedKeywords.length}</span>
+                  <div class="overview-table-actions">
+                    <button class="copy-all-btn" type="button" data-copy-group="confirmed" ${confirmedKeywords.length ? '' : 'disabled'}>复制全部</button>
+                    <span class="overview-table-count">${confirmedKeywords.length}</span>
+                  </div>
                 </div>
                 ${confirmedKeywords.length ? `<div class="table-wrap"><table class="overview-mini-table">
                   <thead><tr><th>关键词</th><th>Exact</th><th>Phrase</th><th>Broad</th></tr></thead>
@@ -1284,7 +1337,10 @@
                     <div class="overview-table-title">待观察关键词</div>
                     <div class="overview-table-sub">需要继续观察表现</div>
                   </div>
-                  <span class="overview-table-count">${watchingKeywords.length}</span>
+                  <div class="overview-table-actions">
+                    <button class="copy-all-btn" type="button" data-copy-group="watching" ${watchingKeywords.length ? '' : 'disabled'}>复制全部</button>
+                    <span class="overview-table-count">${watchingKeywords.length}</span>
+                  </div>
                 </div>
                 ${watchingKeywords.length ? `<div class="table-wrap"><table class="overview-mini-table">
                   <thead><tr><th>关键词</th><th>Exact</th><th>Phrase</th><th>Broad</th></tr></thead>
@@ -1298,7 +1354,10 @@
                     <div class="overview-table-title">否定关键词</div>
                     <div class="overview-table-sub">精准 / 词组匹配</div>
                   </div>
-                  <span class="overview-table-count">${product.negatives.length}</span>
+                  <div class="overview-table-actions">
+                    <button class="copy-all-btn" type="button" data-copy-group="negative" ${product.negatives.length ? '' : 'disabled'}>复制全部</button>
+                    <span class="overview-table-count">${product.negatives.length}</span>
+                  </div>
                 </div>
                 ${product.negatives.length ? `<div class="table-wrap"><table class="overview-mini-table">
                   <thead><tr><th>否定词</th><th style="text-align:right">匹配方式</th></tr></thead>
@@ -1647,6 +1706,12 @@
         if (action === 'add') addStore();
         if (action === 'rename') renameStore();
         if (action === 'delete') deleteStore();
+        return;
+      }
+
+      const copyButton = event.target.closest('[data-copy-group]');
+      if (copyButton && !copyButton.disabled) {
+        copyKeywordGroup(copyButton.dataset.copyGroup);
         return;
       }
 
