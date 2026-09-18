@@ -259,9 +259,9 @@ def quote_pattern_if_needed(pattern: str) -> str:
     inner = normalize_literal_url_host(inner)
 
     if "," in inner:
-        escaped = inner.replace("\\", "\\\\").replace('"', r'\"')
-        # Undo double escaping of regex backslashes introduced by the generic escape.
-        escaped = escaped.replace("\\\\/", "\\/").replace("\\\\.", "\\.").replace("\\\\d", "\\d")
+        # Surge accepts a quoted pattern. Preserve regex backslashes exactly;
+        # only escape literal quote characters needed by the outer quotes.
+        escaped = inner.replace('"', r'\\"')
         return f'"{escaped}"'
 
     if quote:
