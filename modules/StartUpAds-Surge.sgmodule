@@ -5,7 +5,7 @@
 #!raw-url=https://raw.githubusercontent.com/mrtanshiyue/Amazon/main/modules/StartUpAds-Surge.sgmodule
 #!category=去广告
 #!requirement=CORE_VERSION>=20
-#!remark=由 mrtanshiyue/Amazon 自动维护；每日同步 Walvez 上游并按 Surge 当前语法转换 Rewrite / HTTP Script。
+#!remark=由 mrtanshiyue/Amazon 自动维护；过滤上游元数据伪规则，规范 URL host regex，并按 Surge 当前语法结构化转换 Body Rewrite / HTTP Script。
 
 # Source: https://raw.githubusercontent.com/Walvez/surge-startup-ads/main/dist/StartUpAds_Selected.sgmodule
 
@@ -25,7 +25,7 @@ DOMAIN-SUFFIX,adlog-ztjy.szy.cn,REJECT
 
 [URL Rewrite]
 # ===== choiceshuju =====
-^https?:\/\/choicegw2.eastmoney.com\/ads\/userauth\/api\/Ad\/GetLaunchAd _ reject
+^https?:\/\/choicegw2\.eastmoney\.com\/ads\/userauth\/api\/Ad\/GetLaunchAd _ reject
 # ===== kanlixiang =====
 ^https?:\/\/api\.vistopia\.com\.cn\/api\/v\d\/home\/advertisement _ reject
 # ===== lianzhangmenhu =====
@@ -40,7 +40,7 @@ DOMAIN-SUFFIX,adlog-ztjy.szy.cn,REJECT
 ^https?:\/\/app\.yuebuy\.cn\/api\/Portal\/startUp _ reject
 # ===== shihuo =====
 ^https?:\/\/203\.107\.1\.97\/v _ reject
-https://b.appsimg.com/upload/momin/ _ reject
+https://b\.appsimg\.com/upload/momin/ _ reject
 # ===== wodenanjing =====
 ^https?:\/\/m\.mynj\.cn:\d+\/znmh_FEP\/loadpic\.jsp.*ad_pic.*open _ reject
 # ===== wuluyundong =====
@@ -57,8 +57,6 @@ https://b.appsimg.com/upload/momin/ _ reject
 
 
 [Map Local]
-# ===== Version =====
-^https?:\/\/2026.08.29/c415/v2.0.648 data-type=text data="" status-code=200
 # ===== 10 =====
 ^https?:\/\/ftapi\.10jqka\.com\.cn\/futgwapi\/api\/om\/v\d\/ad\/common\/transfer data-type=text data="" status-code=200
 # ===== 139mail =====
@@ -83,9 +81,9 @@ https://b.appsimg.com/upload/momin/ _ reject
 # ===== acfun =====
 ^https?:\/\/api-new\.app\.acfun\.cn\/rest\/app\/flash\/screen\/ data-type=text data="" status-code=200
 # ===== aihuishou =====
-^https?:\/\/gw.aihuishou.com\/app-portal\/home\/getadvertisement data-type=text data="" status-code=200
+^https?:\/\/gw\.aihuishou\.com\/app-portal\/home\/getadvertisement data-type=text data="" status-code=200
 # ===== appso =====
-^https?:\/\/sso.ifanr.com\/jiong\/IOS\/appso\/splash\/ data-type=text data="" status-code=200
+^https?:\/\/sso\.ifanr\.com\/jiong\/IOS\/appso\/splash\/ data-type=text data="" status-code=200
 # ===== alibaba =====
 ^https?:\/\/acs\.m\.taobao\.com\/gw\/mtop\.alibaba\.advertisementservice\.getadv\/ data-type=text data="" status-code=200
 ^https?:\/\/acs\.m\.taobao\.com\/gw\/mtop\.alibaba\.cbu\.app\.homepage\.startup data-type=text data="" status-code=200
@@ -171,7 +169,7 @@ https?:\/\/res\.xiaojukeji\.com\/resapi\/activity\/get(Ruled|Preload|PasMultiNot
 # ===== dazhihui =====
 ^https?://ssp\.dzh\.com\.cn/v2api/adgroupjson data-type=text data="" status-code=200
 # ===== dangdangyuedu =====
-^https?:\/\/e.dangdang.com\/media\/api.+\?action=getDeviceStartPage data-type=text data="" status-code=200
+^https?:\/\/e\.dangdang\.com\/media\/api.+\?action=getDeviceStartPage data-type=text data="" status-code=200
 ^https?:\/\/mapi\.dangdang\.com\/index\.php\?action=init data-type=text data="" status-code=200
 ^https?:\/\/e\.dangdang\.com\/.+?getDeviceStartPage data-type=text data="" status-code=200
 # ===== dianshijia =====
@@ -201,11 +199,11 @@ https?:\/\/res\.xiaojukeji\.com\/resapi\/activity\/get(Ruled|Preload|PasMultiNot
 # ===== duxiaoman =====
 ^https?:\/\/app\.duxiaoman\.com\/walletapp\/misc\/app_startup data-type=text data="" status-code=200
 # ===== elema =====
-^https?:\/\/elemecdn.com\/.+\/sitemap data-type=text data="" status-code=200
-^https?:\/\/fuss10.elemecdn.com\/.+\/w\/640\/h\/\d{3,4} data-type=text data="" status-code=200
-^https?:\/\/fuss10.elemecdn.com\/.+\/w\/750\/h\/\d{3,4} data-type=text data="" status-code=200
-^https?:\/\/fuss10.elemecdn.com\/.+.mp4 data-type=text data="" status-code=200
-^https?:\/\/www1.elecfans.com\/www\/delivery\/ data-type=text data="" status-code=200
+^https?:\/\/elemecdn\.com\/.+\/sitemap data-type=text data="" status-code=200
+^https?:\/\/fuss10\.elemecdn\.com\/.+\/w\/640\/h\/\d{3,4} data-type=text data="" status-code=200
+^https?:\/\/fuss10\.elemecdn\.com\/.+\/w\/750\/h\/\d{3,4} data-type=text data="" status-code=200
+^https?:\/\/fuss10\.elemecdn\.com\/.+.mp4 data-type=text data="" status-code=200
+^https?:\/\/www1\.elecfans\.com\/www\/delivery\/ data-type=text data="" status-code=200
 # ===== echongdian =====
 ^https?:\/\/cdn-evone-ceph\.echargenet\.com\/gw-emas-cdn\/63c4e3b558bb610008969f89 data-type=text data="" status-code=200
 ^https?:\/\/cdn-evone-ceph\.echargenet\.com\/gw-emas-cdn data-type=text data="" status-code=200
@@ -233,9 +231,9 @@ https?:\/\/res\.xiaojukeji\.com\/resapi\/activity\/get(Ruled|Preload|PasMultiNot
 ^https:\/\/mi\.gdt\.qq\.com\/gdt_mview\.fcg data-type=text data="" status-code=200
 ^https:\/\/open\.e\.kuaishou\.com\/rest\/e\/v3\/open\/univ data-type=text data="" status-code=200
 # ===== gaidepaihang =====
-https://zone.guiderank-app.com/guiderank-web/app/ad/listLaunchADByCity.do data-type=text data="" status-code=200
+https://zone\.guiderank-app\.com/guiderank-web/app/ad/listLaunchADByCity.do data-type=text data="" status-code=200
 # ===== guanyu =====
-https://guanyu.longfor.com/app-server/api/v1/main/start data-type=text data="" status-code=200
+https://guanyu\.longfor\.com/app-server/api/v1/main/start data-type=text data="" status-code=200
 # ===== guangqibentian =====
 ^https?:\/\/gha\.ghac\.cn\:8081\/base\/app\/api\/ad\/query\?adType data-type=text data="" status-code=200
 # ===== guojiadili =====
@@ -254,7 +252,7 @@ https://guanyu.longfor.com/app-server/api/v1/main/start data-type=text data="" s
 ^https?:\/\/goblin\.hupu\.com\/.+\/interfaceAd\/getOther data-type=text data="" status-code=200
 ^https?:\/\/i1\.hoopchina\.com\.cn\/blogfile\/.+_\d{3}x\d{4} data-type=tiny-gif status-code=200
 # ===== hongbanbao =====
-https://fbchina.flipchina.cn/v2/ad/query/* data-type=text data="" status-code=200
+https://fbchina\.flipchina\.cn/v2/ad/query/* data-type=text data="" status-code=200
 # ===== huyazhibo =====
 ^https?:\/\/business\.msstatic\.com\/advertiser\/material data-type=text data="" status-code=200
 # ===== haoqixinribao =====
@@ -266,7 +264,7 @@ https://fbchina.flipchina.cn/v2/ad/query/* data-type=text data="" status-code=20
 # ===== hanglvzongheng =====
 ^https?:\/\/(discardrp|startup)\.umetrip\.com\/gateway\/api\/umetrip\/native data-type=text data="" status-code=200
 # ===== hangzhougongjiao =====
-^https?:\/\/m.ibuscloud.com\/v2\/app\/getStartPage data-type=text data="" status-code=200
+^https?:\/\/m\.ibuscloud\.com\/v2\/app\/getStartPage data-type=text data="" status-code=200
 # ===== haohaozhu =====
 ^https?:\/\/api\.haohaozhu\.cn\/index\.php\/home\/AppInit\/getStartPhoto data-type=text data="" status-code=200
 # ===== huabaozhitou =====
@@ -337,15 +335,15 @@ https://fbchina.flipchina.cn/v2/ad/query/* data-type=text data="" status-code=20
 # ===== jiliyinhe =====
 ^https?:\/\/galaxy-app\.geely\.com\/app\/v\d\/advertising data-type=text data="" status-code=200
 # ===== kfc =====
-^https?:\/\/res.kfc.com.cn\/advertisement\/ data-type=text data="" status-code=200
-https://dynamicad.kfc.com.cn/api/app5/homepage/ai/popup data-type=text data="" status-code=200
+^https?:\/\/res\.kfc\.com\.cn\/advertisement\/ data-type=text data="" status-code=200
+https://dynamicad\.kfc\.com\.cn/api/app5/homepage/ai/popup data-type=text data="" status-code=200
 # ===== kuaikan =====
-^https?:\/\/api.kkmh.com\/v\d\/(ad|advertisement)\/ data-type=text data="" status-code=200
+^https?:\/\/api\.kkmh\.com\/v\d\/(ad|advertisement)\/ data-type=text data="" status-code=200
 # ===== ku'an =====
 ^https?:\/\/api\.coolapk\.com\/v6\/search\?.*type=hotSearch data-type=text data="{}" status-code=200 header="Content-Type:application/json"
 # ===== kantianxia =====
-https://open3.vistastory.com/v3/api/index/loading_ad data-type=text data="" status-code=200
-https://open3.vistastory.com/v3/api.*get_popup data-type=text data="" status-code=200
+https://open3\.vistastory\.com/v3/api/index/loading_ad data-type=text data="" status-code=200
+https://open3\.vistastory\.com/v3/api.*get_popup data-type=text data="" status-code=200
 # ===== kuaishou =====
 # ===== kudi =====
 ^https?:\/\/gateway\.abite\.com\/cotti-capi\/customer\/position\/list\?code=cotti-launch-window data-type=text data="" status-code=200
@@ -369,10 +367,10 @@ https://open3.vistastory.com/v3/api.*get_popup data-type=text data="" status-cod
 # ===== linxi =====
 ^https?:\/\/api\.internetofcity\.cn\/api\/resource\/anon\/popups\/(getSplashList|getList) data-type=text data="" status-code=200
 # ===== lecheng =====
-https://dl-cu-hz.lechange.cn/oms-online/advertisementPush/* data-type=text data="" status-code=200
+https://dl-cu-hz\.lechange\.cn/oms-online/advertisementPush/* data-type=text data="" status-code=200
 ^https?:\/\/adx.*anythinktech\.com\/bid data-type=text data="" status-code=200
 # ===== lanjie100 =====
-https://tagit.hyhuo.com/recover/list data-type=text data="" status-code=200
+https://tagit\.hyhuo\.com/recover/list data-type=text data="" status-code=200
 # ===== laiChon =====
 ^https?:\/\/(mobile|shop)\.laichon\.com\/api\/(v1\/goods\/goodsList|exposureAdvStatistics|getWebAdvList) data-type=text data="" status-code=200
 # ===== liangBulU =====
@@ -409,7 +407,7 @@ https?:\/\/helper\.2bulu\.com\/(greenPea\/queryTasks|proSpecial\/allData|saveSpl
 ^https?:\/\/.*\.meituan\.com\/api\/v\d\/(openscreen\?ad|appstatus\?ad|loadInfo\?|startpicture) data-type=text data="" status-code=200
 ^http:\/\/s3plus\.meituan\.net\/.*\/brandcpt-vedio\/.*\?time data-type=text data="" status-code=200
 # ===== MeiWeiBuYongDeng =====
-^https?:\/\/capi.mwee.cn\/app-api\/V12\/app\/getstartad data-type=text data="" status-code=200
+^https?:\/\/capi\.mwee\.cn\/app-api\/V12\/app\/getstartad data-type=text data="" status-code=200
 # ===== MaFengWo =====
 ^https://mapi.mafengwo.cn\/ad\/get_launch_ad_list\/v2 data-type=text data="" status-code=200
 # ===== MaiDuiDui =====
@@ -493,11 +491,11 @@ https?:\/\/helper\.2bulu\.com\/(greenPea\/queryTasks|proSpecial\/allData|saveSpl
 # ===== qqbrower =====
 ^https:\/\/us\.l\.qq\.com\/exapp\?spsa=\d data-type=text data="" status-code=200
 # ===== QuNaEr =====
-https://homefront.qunar.com/front/splash/ad data-type=text data="" status-code=200
+https://homefront\.qunar\.com/front/splash/ad data-type=text data="" status-code=200
 ^https?:\/\/client\.qunar\.com\/pitcher-proxy\?qrt=p_splashAd data-type=text data="" status-code=200
 # ===== QiCheZhiJia =====
-^https?:\/\/adproxy.autohome.com.cn\/AdvertiseService\/ data-type=text data="" status-code=200
-^https?:\/\/app2.autoimg.cn\/appdfs\/ data-type=text data="" status-code=200
+^https?:\/\/adproxy\.autohome\.com\.cn\/AdvertiseService\/ data-type=text data="" status-code=200
+^https?:\/\/app2\.autoimg\.cn\/appdfs\/ data-type=text data="" status-code=200
 # ===== QiDianDuShu =====
 ^https?:\/\/magev\d\.if\.qidian\.com\/argus\/api\/v\d\/client\/getsplashscreen data-type=text data="" status-code=200
 # ===== qinlingkaimen =====
@@ -527,17 +525,17 @@ https://homefront.qunar.com/front/splash/ad data-type=text data="" status-code=2
 # ===== ruiboshi =====
 ^https?:\/\/sdk\.tianmu\.mobi\/ad data-type=text data="" status-code=200
 # ===== shaoshupai =====
-https://ios.sspai.com/api/v3/recommend/page/get\?ad.*ios_home_modal data-type=text data="" status-code=200
+https://ios\.sspai\.com/api/v3/recommend/page/get\?ad.*ios_home_modal data-type=text data="" status-code=200
 # ===== ShunFengYouXuan =====
 ^https://mapi.sfbest.com\/brokerservice-server\/cms\/getPositionById.* data-type=text data="" status-code=200
 # ===== spotify =====
-^https?://spclient.wg.spotify.com/(ad-logic|ads|.+ad_slot|.+banners|.+canvases|.+cards|.+crashlytics|.+doubleclick.net|.+enabled-tracks|.+promoted_offer) data-type=tiny-gif status-code=200
+^https?://spclient\.wg\.spotify\.com/(ad-logic|ads|.+ad_slot|.+banners|.+canvases|.+cards|.+crashlytics|.+doubleclick.net|.+enabled-tracks|.+promoted_offer) data-type=tiny-gif status-code=200
 ^https?:\/\/api\d?\.musical\.ly\/api\/ad\/ data-type=tiny-gif status-code=200
 # ===== SanLianZhongDu =====
-https://apis.lifeweek.com.cn/api/baseConfig/getIosNewConfig data-type=text data="" status-code=200
+https://apis\.lifeweek\.com\.cn/api/baseConfig/getIosNewConfig data-type=text data="" status-code=200
 # ===== ShunFeng =====
 ^https?:\/\/ccsp-egmas\.sf-express\.com\/cx-app-base\/base\/app\/appVersion\/detectionUpgrade data-type=text data="" status-code=200
-https://ccsp-egmas.sf-express.com/cx-app-base/base/app/ad/queryAdImages data-type=text data="" status-code=200
+https://ccsp-egmas\.sf-express\.com/cx-app-base/base/app/ad/queryAdImages data-type=text data="" status-code=200
 ^https?:\/\/shopic\.sf-express\.com\/crm\/mobile\/common\/flashscreen data-type=text data="" status-code=200
 # ===== Soul =====
 ^https:\/\/data-collector\.soulapp\.cn\/api\/data\/report$ data-type=text data="" status-code=200
@@ -576,7 +574,7 @@ https://ccsp-egmas.sf-express.com/cx-app-base/base/app/ad/queryAdImages data-typ
 # ===== TianTianJiJin =====
 ^https?:\/\/appactive\.1234567\.com\.cn\/AppoperationApi\/OperationService\/GetAppStartImg data-type=text data="" status-code=200
 # ===== topwidget =====
-https://top-widgets-api.xiaozujian.com/api/ad/config data-type=text data="" status-code=200
+https://top-widgets-api\.xiaozujian\.com/api/ad/config data-type=text data="" status-code=200
 # ===== TencentNews =====
 ^https?:\/\/r\.inews\.qq\.com\/(adsBlacklist|getFullScreenPic|getQQNewsRemoteConfig) data-type=text data="" status-code=200
 ^https?:\/\/r\.inews\.qq\.com\/(getBannerAds|getNewsRemoteConfig|getSplash|searchHotCatList|upLoadLoc) data-type=text data="" status-code=200
@@ -606,15 +604,15 @@ https://top-widgets-api.xiaozujian.com/api/ad/config data-type=text data="" stat
 ^https?:\/\/api\.dnurse\.com\/api\/boot\/get-latest-items data-type=text data="" status-code=200
 # ===== weipinhui =====
 ^https?:\/\/mapi\.appvipshop\.com\/vips-mobile\/rest\/activity\/advertisement\/get data-type=text data="" status-code=200
-https://mapi.appvipshop.com/vips-mobile/rest/activity/advertisement/get data-type=text data="" status-code=200
+https://mapi\.appvipshop\.com/vips-mobile/rest/activity/advertisement/get data-type=text data="" status-code=200
 ^https:\/\/mapi\.appvipshop\.com\/vips-mobile\/rest\/iosAdInfo\/report data-type=text data="" status-code=200
 # ===== WangYiDaShen =====
 ^https?:\/\/god\.gameyw\.netease\.com\/v\d\/ad\/serving\/app-start data-type=text data="" status-code=200
 # ===== WangYiYouXiang =====
 ^https?:\/\/appconf\.mail\.163\.com\/mmad\/get\.do data-type=text data="" status-code=200
-^https?:\/\/client\.mail\.163.com\/apptrack\/confinfo\/(searchMultiAds.do|showAds.do) data-type=text data="" status-code=200
+^https?:\/\/client\.mail\.163\.com\/apptrack\/confinfo\/(searchMultiAds.do|showAds.do) data-type=text data="" status-code=200
 # ===== WangYiYanXuan =====
-https://support.you.163.com/appversync/check.do data-type=text data="" status-code=200
+https://support\.you\.163\.com/appversync/check.do data-type=text data="" status-code=200
 ^https?:\/\/support\.you\.163\.com\/xhr\/boot\/getBootMedia\.json data-type=text data="" status-code=200
 ^https?:\/\/m\.you\.163\.com\/activity\/popWindow data-type=text data="" status-code=200
 ^https?:\/\/yanxuan\.nosdn\.127\.net\/.*\.mp4 data-type=text data="" status-code=200
@@ -625,7 +623,7 @@ https://support.you.163.com/appversync/check.do data-type=text data="" status-co
 # ===== Weifeng =====
 ^https?:\/\/api\.wfdata\.club\/v2\/yesfeng\/(infoCenterAd|yesList) data-type=text data="" status-code=200
 # ===== Weico =====
-^https?:\/\/overseas.weico.cc\/portal.php\?a=get_coopen_ads data-type=text data="" status-code=200
+^https?:\/\/overseas\.weico\.cc\/portal.php\?a=get_coopen_ads data-type=text data="" status-code=200
 # ===== wangyiwoniudushu =====
 ^https?:\/\/easyreadfs\.nosdn\.127\.net\/ad-material\/ data-type=text data="" status-code=200
 # ===== wangyikaola =====
@@ -648,7 +646,7 @@ https://support.you.163.com/appversync/check.do data-type=text data="" status-co
 # ===== xierdun =====
 ^https?:\/\/wcprd\.hilton\.com\.cn\/app-middleware\/graphql\?type=splashAd data-type=text data="" status-code=200
 # ===== XiaoShuiMian =====
-^https?:\/\/api.psy-1.com\/cosleep\/startup data-type=text data="" status-code=200
+^https?:\/\/api\.psy-1\.com\/cosleep\/startup data-type=text data="" status-code=200
 # ===== XieCheng =====
 ^https:\/\/ma-adx\.ctrip\.com\/_ma\.gif data-type=text data="" status-code=200
 ^https:\/\/mbd\.baidu\.com\/newspage\/api\/getmobads\?page\=landingshare data-type=text data="" status-code=200
@@ -718,7 +716,7 @@ https://support.you.163.com/appversync/check.do data-type=text data="" status-co
 ^https?:\/\/api\.yikaobang\.com\.cn\/client\/main\/homePageSmallAd data-type=text data="" status-code=200
 ^https?:\/\/api\.yikaobang\.com\.cn\/index\.php\/Client\/main\/startPage data-type=text data="" status-code=200
 # ===== YouLinYouKe =====
-https://new-app-api.ylyk.com/v1/user/myinfo/adviser data-type=text data="" status-code=200
+https://new-app-api\.ylyk\.com/v1/user/myinfo/adviser data-type=text data="" status-code=200
 # ===== YinkeZhiBo =====
 ^https?:\/\/service\.busi\.inke\.cn\/api\/flash\/screen data-type=text data="" status-code=200
 # ===== YinxiangNote =====
@@ -857,7 +855,7 @@ https?:\/\/m\.sd\.10086\.cn\/zapi\/app_common\/homeWelcome\/welcome.do data-type
 
 [Body Rewrite]
 # ===== crunchyroll =====
-http-response https://beta-api.crunchyroll.com/cms offset_ms\x22:\d+ offset_ms\x22:99999999999999
+http-response https://beta-api\.crunchyroll\.com/cms offset_ms\x22:\d+ offset_ms\x22:99999999999999
 # ===== dingdongmaicai =====
 http-response ^https?:\/\/maicai\.api\.ddxq\.mobi\/advert\/getAd rt_time\x22:\d{2} rt_time\x22:40
 # ===== feikechaguan =====
@@ -866,7 +864,7 @@ http-response ^https?:\/\/.*flyert.*\/api\/mobile\/index\.php\?version=\d&mobile
 http-response ^https?:\/\/api\.m\.jd\.com\/client\.action\?functionId=lite_advertising jdLiteAdvertisingVO ddgksf2013
 http-response ^https?:\/\/api\.m\.jd\.com\/client\.action\?functionId=lite_SmartPush pushData ddgksf2013
 # ===== kfc =====
-http-response ^https?:\/\/res.kfc.com.cn\/CRM\/kfcad\/apphome6\/apphome.*json bootStrapAd ddgksf2013
+http-response ^https?:\/\/res\.kfc\.com\.cn\/CRM\/kfcad\/apphome6\/apphome.*json bootStrapAd ddgksf2013
 # ===== koudaijizhang =====
 http-response-jq ^https?:\/\/api\.qeeniao\.com\/nap\/ad '.data={}'
 # ===== manmanmai =====
@@ -882,7 +880,7 @@ http-response ^https?:\/\/tft-app\.cdtft\.cn\/gateway-customer\/tftapp\/tft-ams\
 # ===== tianmaojingling =====
 http-response-jq ^https?:\/\/acs\.m\.taobao\.com\/gw\/mtop\.alibaba.*mytab '.data.model.children |= map(select(.name | contains("营销") | not))'
 # ===== testflight =====
-http-request ^https?:\/\/testflight\.apple\.com\/v2\/accounts\/.*\/apps\/\d*/builds/\d*/install storefrontId\x22\x20:\x20\x22.*\x22 storefrontId\x22\x20:\x20\x22143441-1,29\x22
+http-request ^https?:\/\/testflight\.apple\.com\/v2\/accounts\/.*\/apps\/\d*/builds/\d*/install storefrontId\x22\s*:\s*\x22.*\x22 storefrontId\x22:\x22143441-1,29\x22
 # ===== WeChat =====
 http-response ^https?:\/\/mp\.weixin\.qq\.com\/mp\/getappmsgad advertisement ddgksf2013
 # ===== XiaoTe =====
@@ -927,7 +925,7 @@ jingxi_14 = type=http-response,pattern=^https?:\/\/api\.m\.jd\.com\/api\?functio
 jingdong_invalid_15 = type=http-response,pattern=^https?:\/\/api\.m\.jd\.com\/client\.action\?functionId=(hotWords|hotSearchTerms),script-path=https://raw.githubusercontent.com/ddgksf2013/Scripts/refs/heads/master/jd_json.js,requires-body=true
 # ===== ku'an =====
 ku_an_16 = type=http-response,pattern=^https?:\/\/api\.coolapk\.com\/v6\/(feed\/(replyList|detail)|main\/indexV8|dataList),script-path=https://raw.githubusercontent.com/ddgksf2013/Scripts/refs/heads/master/coolapk.js,requires-body=true
-ku_an_17 = type=http-response,pattern=^https?:\/\/api.coolapk.com\/v6\/main\/init,script-path=https://raw.githubusercontent.com/ddgksf2013/Scripts/refs/heads/master/coolapk.js,requires-body=true
+ku_an_17 = type=http-response,pattern=^https?:\/\/api\.coolapk\.com\/v6\/main\/init,script-path=https://raw.githubusercontent.com/ddgksf2013/Scripts/refs/heads/master/coolapk.js,requires-body=true
 # ===== kuake =====
 kuake_18 = type=http-response,pattern=^https?:\/\/open-cms-api\.(uc|quark)\.cn\/open-cms,script-path=https://raw.githubusercontent.com/ddgksf2013/Scripts/master/quark.js,requires-body=true
 # ===== nongyeyinhang =====
@@ -939,7 +937,7 @@ pinganjiankang_21 = type=http-response,pattern=^https?:\/\/api\.jk\.cn\/m\.api,s
 # ===== qidianyuedu =====
 qidianyuedu_22 = type=http-response,pattern=^https?:\/\/apps\.teamair\.cn\/app\/version,script-path=https://raw.githubusercontent.com/ddgksf2013/Scripts/refs/heads/master/qidian.js,requires-body=true
 # ===== ShunFeng =====
-ShunFeng_23 = type=http-response,pattern=https://ccsp-egmas.sf-express.com/cx-app-base/base/app/ad/queryInfoFlow,script-path=https://raw.githubusercontent.com/ddgksf2013/Scripts/refs/heads/master/shunfeng_json.js,requires-body=true
+ShunFeng_23 = type=http-response,pattern=https://ccsp-egmas\.sf-express\.com/cx-app-base/base/app/ad/queryInfoFlow,script-path=https://raw.githubusercontent.com/ddgksf2013/Scripts/refs/heads/master/shunfeng_json.js,requires-body=true
 # ===== Stay =====
 Stay_24 = type=http-response,pattern=^https?:\/\/api\.shenyin\.name\/stay-fork\/browse\/featured$,script-path=https://raw.githubusercontent.com/ddgksf2013/Scripts/refs/heads/master/stay.js,requires-body=true
 # ===== shenmezhidemai =====
