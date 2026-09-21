@@ -41,6 +41,16 @@ MIRROR_ALIASES = {
     "SuiShouJi.conf": "suishouji.ads.js",
     "PixivAds.js": "pixivAds.js",
     "CoolapkAds.js": "coolapk.js",
+    "kuwomusic.vip.js": "kkmusic.vip.js",
+    "Nicegram.pro.js": "nicegram.vip.js",
+    "revenuecat.js": "revenuecat.vip.js",
+    "buyitunes.js": "buyitunes.vip.js",
+    "XiaoHongShu.conf": "XiaoHongShuAds.conf",
+}
+
+SOURCE_OVERRIDES = {
+    "https://raw.githubusercontent.com/VirgilClyne/iRingo/main/snippet/Location.snippet":
+        "https://github.com/NSRingo/GeoServices/releases/latest/download/iRingo.Location.snippet",
 }
 
 DIRECTORY_ONLY_NAMES = {"更多应用去广告"}
@@ -203,6 +213,16 @@ def get_source(entry: Entry) -> tuple[str, str, str]:
             return official, entry.url, "official"
         except Exception as error:
             errors.append(f"official={error}")
+
+        successor_url = SOURCE_OVERRIDES.get(entry.url)
+        if successor_url:
+            try:
+                successor = fetch_text(successor_url)
+                if looks_like_html(successor):
+                    raise ValueError("successor URL returned HTML instead of rules")
+                return successor, successor_url, "successor"
+            except Exception as error:
+                errors.append(f"successor={error}")
 
     basename = source_basename(entry)
     if basename:
