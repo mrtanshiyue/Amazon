@@ -4,60 +4,100 @@ from __future__ import annotations
 import os
 import re
 import time
-from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from urllib.request import Request, urlopen
 
-SOURCE = "https://raw.githubusercontent.com/MeChenCC/Modules/main/Adblock.sgmodule"
+PRIMARY_SOURCE = "https://ddgksf2013.top/rewrite/StartUpAds.conf"
+FALLBACK_SOURCE = "https://raw.githubusercontent.com/master-zen/Net-Link/main/Surge/Module/upstream/StartUpAds.conf"
 TARGET = Path("modules/StartUpAds-Surge.sgmodule")
 PUBLIC_RAW_URL = "https://raw.githubusercontent.com/mrtanshiyue/Amazon/main/modules/StartUpAds-Surge.sgmodule"
-USER_AGENT = "mrtanshiyue-amazon-moyu-adblock-sync/4.0"
+USER_AGENT = "mrtanshiyue-amazon-moyu-startup-sync/5.0"
 
-MIN_SOURCE_BYTES = 15_000
-MIN_URL_REWRITES = 40
-MIN_SCRIPTS = 50
-MIN_MITM_HOSTS = 20
+MIN_SOURCE_BYTES = 40_000
+MIN_APP_LABELS = 350
+MIN_URL_REWRITES = 10
+MIN_MAP_LOCAL = 400
+MIN_BODY_REWRITE = 10
+MIN_SCRIPTS = 20
+MIN_MITM_HOSTS = 400
 MAX_DROP_RATIO = 0.35
-EXCLUDED_MITM_HOSTS = {"api-sams.walmartmobile.cn"}
 
 
 def fetch_text(url: str, attempts: int = 3, timeout: int = 30) -> str:
     last_error = None
     for attempt in range(1, attempts + 1):
         try:
-            request = Request(url, headers={"User-Agent": USER_AGENT})
+            request = Request(
+                url,
+                headers={
+                    "User-Agent": USER_AGENT,
+                    "Accept": "text/plain,*/*;q=0.8",
+                },
+            )
             with urlopen(request, timeout=timeout) as response:
                 text = response.read().decode("utf-8-sig").replace("\r\n", "\n")
-                if not text.strip():
-                    raise ValueError("empty response")
-                return text
+            if not text.strip():
+                raise ValueError("empty response")
+            return text
         except Exception as error:
             last_error = error
             if attempt < attempts:
                 time.sleep(attempt * 2)
-    raise SystemExit(f"Failed to fetch {url} after {attempts} attempts: {last_error}")
+    raise RuntimeError(f"{url}: {last_error}")
 
 
-def split_sections(text: str):
-    order = []
-    sections = {}
-    current = None
+def valid_source(text: str) -> bool:
+    head = text[:2048].lower()
+    return (
+        len(text.encode("utf-8")) >= MIN_SOURCE_BYTES
+        and "墨鱼去开屏" in text[:4096]
+        and "<html" not in head
+        and "<!doctype html" not in head
+        and " url " in text
+    )
+
+
+def fetch_source() -> tuple[str, str]:
+    errors = []
+    for url in (PRIMARY_SOURCE, FALLBACK_SOURCE):
+        try:
+            text = fetch_text(url)
+            if not valid_source(text):
+                raise ValueError("response is not a valid StartUpAds.conf")
+            print(f"Using source: {url}")
+            return url, text
+        except Exception as error:
+            errors.append(f"{url}: {error}")
+            print(f"Source unavailable/invalid, trying fallback: {url}: {error}")
+    raise SystemExit("Unable to fetch valid MoYu StartUpAds source:\n" + "\n".join(errors))
+
+
+def app_labels(text: str) -> list[str]:
+    labels = []
     for line in text.splitlines():
-        match = re.match(r"^\[([^\]]+)\]\s*$", line.strip())
-        if match:
-            current = match.group(1)
-            if current not in sections:
-                sections[current] = []
-                order.append(current)
-            continue
-        if current is not None:
-            sections[current].append(line)
-    return order, sections
+        match = re.match(r"^#\s*>\s*(.+?)\s*$", line.strip())
+        if match and match.group(1).strip().lower() != "version":
+            labels.append(match.group(1).strip())
+    return labels
 
 
-def active_lines(lines):
-    return [line.strip() for line in lines if line.strip() and not line.lstrip().startswith("#")]
+def source_update_time(text: str) -> str:
+    match = re.search(r"^//\s*@UpdateTime\s+(.+?)\s*$", text, re.MULTILINE)
+    return match.group(1).strip() if match else "unknown"
+
+
+def current_label_from_comment(line: str, current: str) -> str:
+    match = re.match(r"^#\s*>\s*(.+?)\s*$", line)
+    if not match:
+        return current
+    value = match.group(1).strip()
+    return current if value.lower() == "version" else value
+
+
+def is_version_sentinel(pattern: str) -> bool:
+    normalized = pattern.replace(r"\/", "/")
+    return bool(re.match(r"^\^https\?://20\d{2}\.\d{2}\.\d{2}/", normalized))
 
 
 def normalize_literal_url_host(pattern: str) -> str:
@@ -88,304 +128,355 @@ def normalize_literal_url_host(pattern: str) -> str:
     return pattern[:host_start] + escaped_host + pattern[host_end:]
 
 
-def quote_pattern_if_needed(pattern: str) -> str:
-    quote = None
-    inner = pattern
-    if len(pattern) >= 2 and pattern[0] == pattern[-1] and pattern[0] in {'"', "'"}:
-        quote = pattern[0]
-        inner = pattern[1:-1]
-
-    inner = normalize_literal_url_host(inner)
-    if "," in inner:
-        return '"' + inner.replace('"', r'\"') + '"'
-    if quote:
-        return quote + inner + quote
-    return inner
+def quote_script_pattern(pattern: str) -> str:
+    pattern = normalize_literal_url_host(pattern)
+    if "," not in pattern:
+        return pattern
+    if '"' in pattern:
+        raise SystemExit(f'Cannot safely quote comma-bearing Script pattern: {pattern}')
+    return f'"{pattern}"'
 
 
-def split_script_params(rhs: str):
-    parts = []
-    start = 0
-    quote = None
-    escaped = False
-    depth_round = depth_square = depth_curly = 0
-
-    for index, char in enumerate(rhs):
-        if escaped:
-            escaped = False
-            continue
-        if char == "\\":
-            escaped = True
-            continue
-        if quote:
-            if char == quote:
-                quote = None
-            continue
-        if char in {'"', "'"}:
-            quote = char
-            continue
-        if char == "(":
-            depth_round += 1
-            continue
-        if char == ")":
-            depth_round = max(0, depth_round - 1)
-            continue
-        if char == "[":
-            depth_square += 1
-            continue
-        if char == "]":
-            depth_square = max(0, depth_square - 1)
-            continue
-        if char == "{":
-            depth_curly += 1
-            continue
-        if char == "}":
-            depth_curly = max(0, depth_curly - 1)
-            continue
-        if char != "," or any((depth_round, depth_square, depth_curly)):
-            continue
-
-        remainder = rhs[index + 1 :]
-        if re.match(r"\s*[A-Za-z][A-Za-z0-9_-]*\s*=", remainder):
-            parts.append(rhs[start:index].strip())
-            start = index + 1
-
-    parts.append(rhs[start:].strip())
-
-    parsed = []
-    seen = set()
-    for part in parts:
-        if "=" not in part:
-            raise SystemExit(f"Invalid Script parameter: {part}")
-        key, value = part.split("=", 1)
-        key = key.strip()
-        value = value.strip()
-        if not re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]*", key):
-            raise SystemExit(f"Invalid Script parameter name: {key}")
-        if key in seen:
-            raise SystemExit(f"Duplicate Script parameter: {key}")
-        seen.add(key)
-        parsed.append((key, value))
-    return parsed
+def encode_body_token(value: str) -> str:
+    return value.replace('"', r"\x22").replace(" ", r"\x20")
 
 
-def parse_script_line(line: str):
-    match = re.match(r"^(.*?)\s*=\s*(.+)$", line.strip())
-    if not match:
-        raise SystemExit(f"Unsupported Script syntax: {line}")
-    name, rhs = match.groups()
-    return name.strip(), split_script_params(rhs)
-
-
-def normalize_script_spec(line: str):
-    original_name, items = parse_script_line(line)
-    values = dict(items)
-
-    script_type = values.get("type")
-    if script_type not in {"http-request", "http-response"}:
-        raise SystemExit(f"Unsupported HTTP Script type in {original_name}: {script_type}")
-    if "pattern" not in values or "script-path" not in values:
-        raise SystemExit(f"Script missing pattern/script-path: {line}")
-
-    values["pattern"] = quote_pattern_if_needed(values["pattern"])
-
-    if values.get("requires-body", "").lower() in {"false", "0"}:
-        values.pop("requires-body", None)
-    elif values.get("requires-body", "").lower() in {"true", "1"}:
-        values["requires-body"] = "true"
-
-    if values.get("max-size") in {"-1", "0"}:
-        values.pop("max-size", None)
-    if values.get("timeout") in {"5", "60"}:
-        values.pop("timeout", None)
-
-    preferred = [
-        "type",
-        "pattern",
-        "script-path",
-        "requires-body",
-        "max-size",
-        "timeout",
-        "script-update-interval",
-        "argument",
-        "engine",
-        "debug",
-        "binary-body-mode",
-        "full-header-mode",
-    ]
-    original_order = [key for key, _ in items]
-    ordered_keys = [key for key in preferred if key in values]
-    ordered_keys.extend(key for key in original_order if key in values and key not in ordered_keys)
-
-    semantic_key = tuple((key, values[key]) for key in ordered_keys)
-    return original_name, semantic_key, values, ordered_keys
-
-
-def safe_script_name(value: str) -> str:
-    value = value.strip()
-    value = re.sub(r"[^A-Za-z0-9_\-]+", "_", value).strip("_")
-    return value or "script"
-
-
-def normalize_scripts(lines):
-    specs = []
-    seen_semantics = set()
-    for line in active_lines(lines):
-        original_name, semantic_key, values, ordered_keys = normalize_script_spec(line)
-        if semantic_key in seen_semantics:
-            continue
-        seen_semantics.add(semantic_key)
-        specs.append((safe_script_name(original_name), values, ordered_keys))
-
-    totals = Counter(name for name, _, _ in specs)
-    used = defaultdict(int)
+def render_grouped(items: list[tuple[str, str]]) -> list[str]:
     output = []
-    for base, values, ordered_keys in specs:
-        used[base] += 1
-        name = base if totals[base] == 1 else f"{base}_{used[base]}"
-        rendered = ",".join(f"{key}={values[key]}" for key in ordered_keys)
-        output.append(f"{name} = {rendered}")
+    previous = None
+    for label, line in items:
+        if label and label != previous:
+            if output:
+                output.append("")
+            output.append(f"# > {label}")
+            previous = label
+        output.append(line)
     return output
 
 
-def normalize_url_rewrites(lines):
-    output = []
+def dedupe_grouped(items: list[tuple[str, str]]) -> list[tuple[str, str]]:
     seen = set()
-    for raw in active_lines(lines):
-        match = re.match(
-            r"^(.*?)\s+(?:-|_)\s+(reject(?:-[A-Za-z0-9_-]+)?)\s*$",
-            raw,
+    output = []
+    for label, line in items:
+        if line in seen:
+            continue
+        seen.add(line)
+        output.append((label, line))
+    return output
+
+
+def parse(text: str):
+    rules: list[tuple[str, str]] = []
+    url_rewrite: list[tuple[str, str]] = []
+    map_local: list[tuple[str, str]] = []
+    body_rewrite: list[tuple[str, str]] = []
+    scripts: list[tuple[str, str]] = []
+    hosts: list[str] = []
+
+    current_label = ""
+    script_index = 0
+    active_rules = 0
+
+    script_types = {
+        "script-response-body": ("http-response", True),
+        "script-response-header": ("http-response", False),
+        "script-request-body": ("http-request", True),
+        "script-request-header": ("http-request", False),
+        "script-analyze-echo-response": ("http-request", True),
+        "script-echo-response": ("http-request", False),
+    }
+
+    for line_no, original in enumerate(text.splitlines(), 1):
+        line = original.strip()
+        if not line:
+            continue
+
+        if line.startswith("#"):
+            current_label = current_label_from_comment(line, current_label)
+            continue
+        if line.startswith((";", "//")):
+            continue
+
+        hostname_match = re.match(r"^hostname\s*=\s*(.+)$", line, re.IGNORECASE)
+        if hostname_match:
+            hosts.extend(
+                host.strip()
+                for host in hostname_match.group(1).split(",")
+                if host.strip()
+            )
+            continue
+
+        filter_match = re.match(
+            r"^(host|host-suffix|host-keyword|host-wildcard)\s*,\s*([^,]+?)\s*,\s*([^,\s]+)\s*$",
+            line,
             re.IGNORECASE,
         )
-        if not match:
-            raise SystemExit(f"Unsupported URL Rewrite syntax: {raw}")
-        pattern, action = match.groups()
-        action = action.lower()
-        if action != "reject":
-            raise SystemExit(f"Unexpected non-reject action in mirror URL Rewrite: {raw}")
-        line = f"{normalize_literal_url_host(pattern.strip())} _ reject"
-        if line not in seen:
-            seen.add(line)
-            output.append(line)
-    return output
-
-
-def normalize_map_local(lines):
-    output = []
-    seen = set()
-    for raw in active_lines(lines):
-        parts = raw.split(maxsplit=1)
-        if len(parts) != 2:
-            raise SystemExit(f"Invalid Map Local line: {raw}")
-        line = f"{normalize_literal_url_host(parts[0])} {parts[1]}"
-        if line not in seen:
-            seen.add(line)
-            output.append(line)
-    return output
-
-
-def normalize_mitm(lines):
-    hosts = []
-    for raw in lines:
-        stripped = raw.strip()
-        if not stripped.startswith("hostname ="):
+        if filter_match:
+            qx_type, value, policy = filter_match.groups()
+            type_map = {
+                "host": "DOMAIN",
+                "host-suffix": "DOMAIN-SUFFIX",
+                "host-keyword": "DOMAIN-KEYWORD",
+                "host-wildcard": "DOMAIN-WILDCARD",
+            }
+            policy_map = {"direct": "DIRECT", "reject": "REJECT"}
+            policy_key = policy.lower()
+            if policy_key not in policy_map:
+                raise SystemExit(f"Unsupported filter policy at line {line_no}: {original}")
+            rules.append(
+                (
+                    current_label,
+                    f"{type_map[qx_type.lower()]},{value.strip()},{policy_map[policy_key]}",
+                )
+            )
+            active_rules += 1
             continue
-        value = stripped.split("=", 1)[1].strip()
-        if value.startswith("%APPEND%"):
-            value = value[len("%APPEND%") :].strip()
-        hosts.extend(host.strip() for host in value.split(",") if host.strip())
 
-    return sorted(
-        {
-            host
-            for host in hosts
-            if host.lower() not in EXCLUDED_MITM_HOSTS
-        },
-        key=str.lower,
+        if re.match(r"^(ip-cidr|ip6-cidr|geoip|final)\s*,", line, re.IGNORECASE):
+            raise SystemExit(f"Global routing rule is not allowed in ad module at line {line_no}: {original}")
+
+        if " url " not in line:
+            raise SystemExit(f"Unsupported StartUpAds syntax at line {line_no}: {original}")
+
+        pattern, action = line.split(" url ", 1)
+        pattern = normalize_literal_url_host(pattern.strip())
+        action = action.strip()
+
+        if is_version_sentinel(pattern):
+            continue
+
+        active_rules += 1
+
+        if action == "reject":
+            url_rewrite.append((current_label, f"{pattern} _ reject"))
+            continue
+
+        if action == "reject-200":
+            map_local.append((current_label, f'{pattern} data-type=text data="" status-code=200'))
+            continue
+
+        if action == "reject-img":
+            map_local.append((current_label, f"{pattern} data-type=tiny-gif status-code=200"))
+            continue
+
+        if action == "reject-dict":
+            map_local.append(
+                (
+                    current_label,
+                    f'{pattern} data-type=text data="{{}}" status-code=200 '
+                    'header="Content-Type:application/json;charset=utf-8"',
+                )
+            )
+            continue
+
+        if action == "reject-array":
+            map_local.append(
+                (
+                    current_label,
+                    f'{pattern} data-type=text data="[]" status-code=200 '
+                    'header="Content-Type:application/json;charset=utf-8"',
+                )
+            )
+            continue
+
+        if action.startswith(("302 ", "307 ")):
+            status, target = action.split(maxsplit=1)
+            if not target.startswith(("http://", "https://")):
+                raise SystemExit(f"Invalid redirect target at line {line_no}: {original}")
+            url_rewrite.append((current_label, f"{pattern} {target} {status}"))
+            continue
+
+        if action.startswith("response-body "):
+            rest = action[len("response-body "):]
+            separator = " response-body "
+            if separator not in rest:
+                raise SystemExit(f"Invalid response-body at line {line_no}: {original}")
+            find, replacement = rest.split(separator, 1)
+            body_rewrite.append(
+                (
+                    current_label,
+                    f"http-response {pattern} {encode_body_token(find)} {encode_body_token(replacement)}",
+                )
+            )
+            continue
+
+        if action.startswith("request-body "):
+            rest = action[len("request-body "):]
+            separator = " request-body "
+            if separator not in rest:
+                raise SystemExit(f"Invalid request-body at line {line_no}: {original}")
+            find, replacement = rest.split(separator, 1)
+            body_rewrite.append(
+                (
+                    current_label,
+                    f"http-request {pattern} {encode_body_token(find)} {encode_body_token(replacement)}",
+                )
+            )
+            continue
+
+        if action.startswith("jsonjq-response-body "):
+            jq = action[len("jsonjq-response-body "):].strip()
+            if not jq:
+                raise SystemExit(f"Empty jsonjq-response-body at line {line_no}")
+            body_rewrite.append((current_label, f"http-response-jq {pattern} {jq}"))
+            continue
+
+        if action.startswith("jsonjq-request-body "):
+            jq = action[len("jsonjq-request-body "):].strip()
+            if not jq:
+                raise SystemExit(f"Empty jsonjq-request-body at line {line_no}")
+            body_rewrite.append((current_label, f"http-request-jq {pattern} {jq}"))
+            continue
+
+        if action.startswith("echo-response "):
+            rest = action[len("echo-response "):]
+            separator = " echo-response "
+            if separator not in rest:
+                raise SystemExit(f"Invalid echo-response at line {line_no}: {original}")
+            response_meta, resource = rest.split(separator, 1)
+            response_meta = response_meta.strip()
+            resource = resource.strip()
+            if not resource.startswith("https://"):
+                raise SystemExit(f"Non-HTTPS echo resource at line {line_no}: {resource}")
+            parts = response_meta.split(r"\r\n")
+            content_type = parts[0].strip()
+            headers = [f"Content-Type:{content_type}"]
+            for extra in parts[1:]:
+                extra = extra.strip()
+                if extra:
+                    if ":" not in extra:
+                        raise SystemExit(f"Invalid echo-response header at line {line_no}: {extra}")
+                    headers.append(extra)
+            header_value = "|".join(headers)
+            map_local.append(
+                (
+                    current_label,
+                    f'{pattern} data-type=file data="{resource}" '
+                    f'header="{header_value}" status-code=200',
+                )
+            )
+            continue
+
+        handled = False
+        for qx_type, (surge_type, requires_body) in script_types.items():
+            prefix = qx_type + " "
+            if not action.startswith(prefix):
+                continue
+            script_path = action[len(prefix):].strip()
+            if not script_path.startswith("https://"):
+                raise SystemExit(f"Non-HTTPS Script URL at line {line_no}: {script_path}")
+            script_index += 1
+            params = [
+                f"type={surge_type}",
+                f"pattern={quote_script_pattern(pattern)}",
+                f"script-path={script_path}",
+            ]
+            if requires_body:
+                params.append("requires-body=true")
+            scripts.append(
+                (
+                    current_label,
+                    f"Moyu_{script_index:04d} = " + ",".join(params),
+                )
+            )
+            handled = True
+            break
+
+        if handled:
+            continue
+
+        raise SystemExit(
+            "New/unsupported Quantumult X action; refusing to publish\n"
+            f"line {line_no}: {original}"
+        )
+
+    return {
+        "rules": dedupe_grouped(rules),
+        "url_rewrite": dedupe_grouped(url_rewrite),
+        "map_local": dedupe_grouped(map_local),
+        "body_rewrite": dedupe_grouped(body_rewrite),
+        "scripts": dedupe_grouped(scripts),
+        "hosts": sorted(set(hosts), key=str.lower),
+        "active_rules": active_rules,
+    }
+
+
+def section_count(text: str, section: str) -> int:
+    marker = f"[{section}]"
+    start = text.find(marker)
+    if start < 0:
+        return 0
+    tail = text[start + len(marker):]
+    next_match = re.search(r"^\[[^\]]+\]\s*$", tail, re.MULTILINE)
+    body = tail[: next_match.start()] if next_match else tail
+    return len(
+        [
+            line
+            for line in body.splitlines()
+            if line.strip() and not line.lstrip().startswith("#")
+        ]
     )
 
 
-def section_active_count(text: str, section: str) -> int:
-    _, sections = split_sections(text)
-    return len(active_lines(sections.get(section, [])))
+def mitm_count(text: str) -> int:
+    match = re.search(r"^hostname\s*=\s*%APPEND%\s+(.+)$", text, re.MULTILINE)
+    if not match:
+        return 0
+    return len([item for item in match.group(1).split(",") if item.strip()])
 
 
-def mitm_host_count(text: str) -> int:
-    _, sections = split_sections(text)
-    return len(normalize_mitm(sections.get("MITM", [])))
-
-
-def validate_result(result: str, existing: str):
-    required_sections = [
-        "General",
-        "Rule",
-        "URL Rewrite",
-        "Map Local",
-        "Body Rewrite",
-        "Script",
-        "MITM",
-    ]
+def validate(result: str, existing: str, label_count: int):
+    required_sections = ["Rule", "URL Rewrite", "Map Local", "Body Rewrite", "Script", "MITM"]
     for section in required_sections:
         if result.count(f"[{section}]") != 1:
-            raise SystemExit(f"Unexpected duplicate/missing [{section}] section")
+            raise SystemExit(f"Missing/duplicate [{section}]")
 
-    for required in [
-        "#!name=墨鱼去广告模块（Surge兼容版）",
-        f"#!raw-url={PUBLIC_RAW_URL}",
-        "#!requirement=CORE_VERSION>=20",
-    ]:
-        if required not in result:
-            raise SystemExit(f"Missing required content: {required}")
+    floors = {
+        "URL Rewrite": MIN_URL_REWRITES,
+        "Map Local": MIN_MAP_LOCAL,
+        "Body Rewrite": MIN_BODY_REWRITE,
+        "Script": MIN_SCRIPTS,
+    }
+    for section, floor in floors.items():
+        count = section_count(result, section)
+        if count < floor:
+            raise SystemExit(f"[{section}] unexpectedly small: {count} < {floor}")
 
-    url_count = section_active_count(result, "URL Rewrite")
-    script_count = section_active_count(result, "Script")
-    host_count = mitm_host_count(result)
+    if label_count < MIN_APP_LABELS:
+        raise SystemExit(f"Too few app labels: {label_count} < {MIN_APP_LABELS}")
 
-    if url_count < MIN_URL_REWRITES:
-        raise SystemExit(f"URL Rewrite unexpectedly small: {url_count} < {MIN_URL_REWRITES}")
-    if script_count < MIN_SCRIPTS:
-        raise SystemExit(f"Script section unexpectedly small: {script_count} < {MIN_SCRIPTS}")
-    if host_count < MIN_MITM_HOSTS:
-        raise SystemExit(f"MITM hostname list unexpectedly small: {host_count} < {MIN_MITM_HOSTS}")
+    hosts = mitm_count(result)
+    if hosts < MIN_MITM_HOSTS:
+        raise SystemExit(f"Too few MITM hosts: {hosts} < {MIN_MITM_HOSTS}")
 
-    if re.search(r"\s-\sreject(?:-[A-Za-z0-9_-]+)?\s*$", result, re.MULTILINE):
-        raise SystemExit("Legacy '- reject' syntax survived conversion")
-    if "max-size=-1" in result:
-        raise SystemExit("Unlimited HTTP Script body survived conversion")
-    if "timeout=60" in result:
-        raise SystemExit("Converter-default Script timeout survived conversion")
+    if " url " in result:
+        raise SystemExit("Quantumult X rewrite syntax survived conversion")
+    if "max-size=-1" in result or "timeout=60" in result:
+        raise SystemExit("Unsafe/default script parameters survived conversion")
 
-    script_names = []
-    _, sections = split_sections(result)
-    for line in active_lines(sections.get("Script", [])):
-        name, _ = parse_script_line(line)
-        script_names.append(name)
-    duplicates = [name for name, count in Counter(script_names).items() if count > 1]
-    if duplicates:
-        raise SystemExit(f"Duplicate generated Script names: {', '.join(sorted(duplicates))}")
-
-    if existing and "#!name=墨鱼去广告模块（Surge兼容版）" in existing:
-        for section in ["URL Rewrite", "Script"]:
-            old = section_active_count(existing, section)
-            new = section_active_count(result, section)
+    if existing and "#!name=墨鱼去开屏2.0（Surge兼容版）" in existing:
+        for section in floors:
+            old = section_count(existing, section)
+            new = section_count(result, section)
             if old >= 10 and new < old * (1 - MAX_DROP_RATIO):
-                raise SystemExit(f"[{section}] shrank too much ({old} -> {new}); keeping previous module")
-        old_hosts = mitm_host_count(existing)
-        if old_hosts >= 10 and host_count < old_hosts * (1 - MAX_DROP_RATIO):
-            raise SystemExit(
-                f"MITM hostname list shrank too much ({old_hosts} -> {host_count}); keeping previous module"
+                raise SystemExit(f"[{section}] shrank too much ({old} -> {new})")
+        old_hosts = mitm_count(existing)
+        if old_hosts >= MIN_MITM_HOSTS and hosts < old_hosts * (1 - MAX_DROP_RATIO):
+            raise SystemExit(f"MITM hosts shrank too much ({old_hosts} -> {hosts})")
+
+
+def script_urls(result: str) -> list[str]:
+    match = re.search(r"\[Script\]([\s\S]*?)\n\[MITM\]", result)
+    if not match:
+        return []
+    return sorted(
+        set(
+            re.findall(
+                r"script-path=(https?://[^,\s]+)",
+                match.group(1),
             )
-
-
-def script_urls(result: str):
-    _, sections = split_sections(result)
-    urls = []
-    for line in active_lines(sections.get("Script", [])):
-        _, params = parse_script_line(line)
-        value = dict(params).get("script-path", "")
-        if value.startswith(("https://", "http://")):
-            urls.append(value)
-    return sorted(set(urls))
+        )
+    )
 
 
 def check_remote_script(url: str, attempts: int = 3):
@@ -414,7 +505,7 @@ def check_remote_script(url: str, attempts: int = 3):
 def validate_remote_scripts(result: str):
     urls = script_urls(result)
     if len(urls) < 10:
-        raise SystemExit(f"Unexpectedly few unique remote scripts: {len(urls)}")
+        raise SystemExit(f"Unexpectedly few remote scripts: {len(urls)}")
 
     failures = []
     with ThreadPoolExecutor(max_workers=min(8, len(urls))) as executor:
@@ -426,84 +517,89 @@ def validate_remote_scripts(result: str):
                 failures.append(str(error))
 
     if failures:
-        details = "\n".join(f"  - {failure}" for failure in sorted(failures))
         raise SystemExit(
-            "Remote Script health check failed after retries; keeping previous module:\n" + details
+            "Remote Script health check failed; keeping previous module:\n"
+            + "\n".join(f"  - {failure}" for failure in sorted(failures))
         )
 
     print(f"Remote Script health check passed for {len(urls)} unique URLs.")
 
 
-def convert(source: str) -> str:
-    if len(source) < MIN_SOURCE_BYTES:
-        raise SystemExit(f"Unexpectedly short MoYu mirror module: {len(source)} chars")
-    if "#!name=墨鱼去广告模块" not in source:
-        raise SystemExit("Unexpected MoYu mirror module header")
-
-    _, sections = split_sections(source)
-    for section in ["URL Rewrite", "Script", "MITM"]:
-        if section not in sections:
-            raise SystemExit(f"Required upstream section missing: [{section}]")
-
-    url_rewrites = normalize_url_rewrites(sections.get("URL Rewrite", []))
-    map_local = normalize_map_local(sections.get("Map Local", []))
-    scripts = normalize_scripts(sections.get("Script", []))
-    hosts = normalize_mitm(sections.get("MITM", []))
-
-    general = active_lines(sections.get("General", []))
-    rules = active_lines(sections.get("Rule", []))
+def build(source_url: str, source: str) -> tuple[str, int]:
+    parsed = parse(source)
+    labels = app_labels(source)
+    unique_labels = len(set(labels))
+    update_time = source_update_time(source)
 
     header = [
-        "#!name=墨鱼去广告模块（Surge兼容版）",
-        "#!desc=同步墨鱼原 Modules 持续镜像，并按本仓库规则转换为 Surge 当前兼容语法",
+        "#!name=墨鱼去开屏2.0（Surge兼容版）",
+        f"#!desc=同步墨鱼 StartUpAds.conf；当前约 {unique_labels} 个唯一应用/规则标签",
         "#!author=ddgksf2013",
-        "#!contributor=@blackmatrix7, @app2smile",
         "#!homepage=https://github.com/ddgksf2013",
         "#!tgchannel=https://t.me/ddgksf2021",
         f"#!raw-url={PUBLIC_RAW_URL}",
         "#!category=去广告",
         "#!requirement=CORE_VERSION>=20",
-        "#!remark=由 mrtanshiyue/Amazon 自动维护；上游为原 ddgksf2013/Modules 的持续更新镜像，统一 Surge Rewrite/HTTP Script 语法，脚本名去重，并移除无限 body 缓冲与转换器默认长超时。",
+        f"#!remark=上游更新时间 {update_time}；由 mrtanshiyue/Amazon 自动同步并转换为 Surge 语法。",
         "",
-        f"# Source mirror: {SOURCE}",
-        "# Original project: https://github.com/ddgksf2013/Modules",
+        f"# Primary source: {PRIMARY_SOURCE}",
+        f"# Fetched from: {source_url}",
+        f"# App/rule labels: {len(labels)} total / {unique_labels} unique",
         "",
     ]
 
     output = list(header)
-    output.extend(["[General]", *general, ""])
-    output.extend(["[Rule]", *rules, ""])
-    output.extend(["[URL Rewrite]", *url_rewrites, ""])
-    output.extend(["[Map Local]", *map_local, ""])
-    output.extend(["[Body Rewrite]", ""])
-    output.extend(["[Script]", *scripts, ""])
-    output.extend(["[MITM]", "", "hostname = %APPEND% " + ",".join(hosts), ""])
+    output.append("[Rule]")
+    output.extend(render_grouped(parsed["rules"]))
+    output.append("")
 
-    return "\n".join(output).rstrip() + "\n"
+    output.append("[URL Rewrite]")
+    output.extend(render_grouped(parsed["url_rewrite"]))
+    output.append("")
+
+    output.append("[Map Local]")
+    output.extend(render_grouped(parsed["map_local"]))
+    output.append("")
+
+    output.append("[Body Rewrite]")
+    output.extend(render_grouped(parsed["body_rewrite"]))
+    output.append("")
+
+    output.append("[Script]")
+    output.extend(render_grouped(parsed["scripts"]))
+    output.append("")
+
+    output.extend(["[MITM]", "", "hostname = %APPEND% " + ",".join(parsed["hosts"]), ""])
+
+    result = "\n".join(output).rstrip() + "\n"
+    return result, unique_labels
 
 
 def main():
-    source = fetch_text(SOURCE)
+    source_url, source = fetch_source()
     TARGET.parent.mkdir(parents=True, exist_ok=True)
     existing = TARGET.read_text(encoding="utf-8") if TARGET.exists() else ""
 
-    result = convert(source)
-    validate_result(result, existing)
+    result, unique_labels = build(source_url, source)
+    validate(result, existing, unique_labels)
 
     if os.environ.get("SKIP_REMOTE_SCRIPT_CHECK") != "1":
         validate_remote_scripts(result)
 
-    if existing == result:
+    if result == existing:
         print("No upstream or conversion changes.")
         return
 
     TARGET.write_text(result, encoding="utf-8")
     print(
         f"Updated {TARGET}: "
-        f"{section_active_count(result, 'URL Rewrite')} rewrites, "
-        f"{section_active_count(result, 'Map Local')} map-local rules, "
-        f"{section_active_count(result, 'Script')} scripts, "
-        f"{mitm_host_count(result)} MITM hosts"
+        f"{unique_labels} unique app/rule labels, "
+        f"{section_count(result, 'Rule')} rules, "
+        f"{section_count(result, 'URL Rewrite')} URL rewrites, "
+        f"{section_count(result, 'Map Local')} map-local rules, "
+        f"{section_count(result, 'Body Rewrite')} body rewrites, "
+        f"{section_count(result, 'Script')} scripts, "
+        f"{mitm_count(result)} MITM hosts"
     )
 
 
