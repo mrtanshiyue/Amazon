@@ -18,7 +18,7 @@ USER_AGENT = "mrtanshiyue-amazon-moyu-adblock-sync/3.0"
 # The old ddgksf2013/Modules endpoint is no longer directly readable, so sync the
 # maintained source files themselves instead of depending on a stale mirror.
 SOURCE_URLS = [
-    "https://gist.githubusercontent.com/ddgksf2013/12ef6aad209155e7eb62c5b00c11b9dd/raw/StartUpAds.conf",
+    "https://ddgksf2013.top/rewrite/StartUpAds.conf",
     "https://raw.githubusercontent.com/ddgksf2013/Rewrite/master/AdBlock/Ximalaya.conf",
     "https://raw.githubusercontent.com/ddgksf2013/Rewrite/master/AdBlock/BilibiliAds.conf",
     "https://raw.githubusercontent.com/ddgksf2013/Rewrite/master/AdBlock/Weibo.conf",
