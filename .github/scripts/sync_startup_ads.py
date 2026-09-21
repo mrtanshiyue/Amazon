@@ -50,7 +50,7 @@ MIRROR_ALIASES = {
 
 SOURCE_OVERRIDES = {
     "https://raw.githubusercontent.com/VirgilClyne/iRingo/main/snippet/Location.snippet":
-        "https://github.com/NSRingo/GeoServices/releases/latest/download/iRingo.Location.snippet",
+        "https://github.com/NSRingo/GeoServices/releases/latest/download/Location.sgmodule",
 }
 
 DIRECTORY_ONLY_NAMES = {"更多应用去广告"}
