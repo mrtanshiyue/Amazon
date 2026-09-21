@@ -6,6 +6,7 @@ import os
 import re
 import time
 from collections import Counter, defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
 from urllib.parse import urlparse, urldefrag
@@ -621,41 +622,52 @@ def render_section(section: str, rows):
 def build_module(entries: list[Entry]) -> str:
     store = defaultdict(list)
 
+    fetchable = []
     for entry in entries:
         if entry.name in DIRECTORY_ONLY_NAMES:
             entry.status = "CATALOG_ONLY"
             entry.note = "README directory/homepage entry; no single executable rule source"
-            continue
-
-        if entry.deprecated:
+        elif entry.deprecated:
             entry.status = "DEPRECATED"
             entry.note = "Official README marks this entry deprecated/unavailable"
-            continue
-
-        if not entry.url:
+        elif not entry.url:
             entry.status = "NO_URL"
             entry.note = "No source URL in official README"
+        else:
+            fetchable.append(entry)
+
+    fetched = {}
+    with ThreadPoolExecutor(max_workers=min(12, max(1, len(fetchable)))) as executor:
+        futures = {executor.submit(get_source, entry): entry for entry in fetchable}
+        for future in as_completed(futures):
+            entry = futures[future]
+            key = (entry.category, entry.index)
+            try:
+                fetched[key] = future.result()
+            except Exception as error:
+                fetched[key] = error
+
+    for entry in fetchable:
+        value = fetched[(entry.category, entry.index)]
+        if isinstance(value, Exception):
+            entry.status = "UNAVAILABLE"
+            entry.note = str(value)
             continue
 
-        try:
-            source, source_used, source_mode = get_source(entry)
-            entry.source_used = source_used
-            entry.source_mode = source_mode
+        source, source_used, source_mode = value
+        entry.source_used = source_used
+        entry.source_mode = source_mode
+        before = sum(entry.counts.values())
+        parsed_native = parse_surge_sections(entry, source, store)
+        if not parsed_native or sum(entry.counts.values()) == before:
+            parse_qx(entry, source, store)
 
-            before = sum(entry.counts.values())
-            parsed_native = parse_surge_sections(entry, source, store)
-            if not parsed_native or sum(entry.counts.values()) == before:
-                parse_qx(entry, source, store)
-
-            produced = sum(entry.counts.values())
-            if produced > 0:
-                entry.status = "ACTIVE"
-            else:
-                entry.status = "NO_RULES"
-                entry.note = (entry.note + " source fetched but no executable trigger rules parsed").strip()
-        except Exception as error:
-            entry.status = "UNAVAILABLE"
-            entry.note = str(error)
+        produced = sum(entry.counts.values())
+        if produced > 0:
+            entry.status = "ACTIVE"
+        else:
+            entry.status = "NO_RULES"
+            entry.note = (entry.note + " source fetched but no executable trigger rules parsed").strip()
 
     store = dedupe_store(store)
     store["Script"] = unique_script_names(store.get("Script", []))
