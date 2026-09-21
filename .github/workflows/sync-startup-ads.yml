@@ -1,4 +1,4 @@
-name: Sync Surge-compatible startup ads module
+name: Sync MoYu full Surge module
 
 on:
   push:
@@ -15,7 +15,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: sync-surge-startup-ads
+  group: sync-moyu-full-surge
   cancel-in-progress: false
 
 jobs:
@@ -30,20 +30,20 @@ jobs:
         shell: bash
         run: python3 -m py_compile .github/scripts/sync_startup_ads.py
 
-      - name: Fetch upstream, convert and validate
+      - name: Fetch README catalog, convert and validate
         shell: bash
         run: python3 .github/scripts/sync_startup_ads.py
 
-      - name: Commit only when module changed
+      - name: Commit full module when changed
         shell: bash
         run: |
           if git diff --quiet -- modules/StartUpAds-Surge.sgmodule; then
-            echo "No startup ads changes."
+            echo "No MoYu full module changes."
             exit 0
           fi
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add modules/StartUpAds-Surge.sgmodule
-          git commit -m "chore: sync Surge startup ads module"
+          git commit -m "chore: sync MoYu full Surge module"
           git push
