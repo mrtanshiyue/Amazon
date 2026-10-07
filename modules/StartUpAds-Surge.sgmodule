@@ -345,7 +345,6 @@ https://imasdk\.googleapis\.com/js/sdkloader/ima3.js _ reject
 HereByAD _ reject
 herebyad _ reject
 ad-provider.js _ reject
-ad.*\.js _ reject
 jbnnr_huath_2.js _ reject
 jbnnr_mmdaohang_2.js _ reject
 jbnnr_yueyupp_3.js _ reject
