@@ -21,7 +21,7 @@
 #   10. [DEPRECATED] 端传媒VIP[已失效] | https://ddgksf2013.top/scripts/duan.vip.js | Official README marks this entry deprecated/unavailable
 #   11. [ACTIVE] via mirror Goodbility会员 | https://raw.githubusercontent.com/ifflagged/Romeo/main/Modules/Surge/ddgksf2013/Official/goodbility.vip.js
 # 广告屏蔽: 42/42 cataloged, 37 active
-#   01. [ACTIVE] via official 微信小程序去广告 | https://github.com/ddgksf2013/Rewrite/raw/master/AdBlock/Applet.conf
+#   01. [ACTIVE] via mirror 微信小程序去广告 | https://raw.githubusercontent.com/ifflagged/Romeo/main/Modules/Surge/ddgksf2013/Official/Applet.conf
 #   02. [ACTIVE] via mirror 墨鱼去开屏2.0 | https://raw.githubusercontent.com/ifflagged/Romeo/main/Modules/Surge/ddgksf2013/Official/StartUpAds.conf |  unsupported-qx-line
 #   03. [ACTIVE] via official 油管广告屏蔽 / 视频自动PIP+背景播放 | https://github.com/ddgksf2013/Rewrite/raw/master/AdBlock/YoutubeAds.conf
 #   04. [DEPRECATED] 公众号图文去广告 / 无法去除朋友圈AD | https://github.com/ddgksf2013/Rewrite/raw/master/AdBlock/WeChat.conf | Official README marks this entry deprecated/unavailable
@@ -32,8 +32,8 @@
 #   09. [ACTIVE] via mirror 小红书去水印 | https://raw.githubusercontent.com/ifflagged/Romeo/main/Modules/Surge/ddgksf2013/Official/XiaoHongShuAds.conf
 #   10. [ACTIVE] via official Keep超级净化 | https://github.com/ddgksf2013/Rewrite/raw/master/AdBlock/KeepAds.conf
 #   11. [ACTIVE] via official Pixiv去广告 | https://github.com/ddgksf2013/Scripts/raw/master/pixivAds.js
-#   12. [ACTIVE] via official 酷安去广告 | https://github.com/ddgksf2013/Scripts/raw/master/coolapk.js
-#   13. [ACTIVE] via official 12306去广告 | https://github.com/ddgksf2013/Scripts/raw/master/12306.js
+#   12. [ACTIVE] via mirror 酷安去广告 | https://raw.githubusercontent.com/ifflagged/Romeo/main/Modules/Surge/ddgksf2013/Official/coolapk.js
+#   13. [ACTIVE] via mirror 12306去广告 | https://raw.githubusercontent.com/ifflagged/Romeo/main/Modules/Surge/ddgksf2013/Official/12306.js
 #   14. [DEPRECATED] [未适配新版] 多多视频去广告 | https://raw.githubusercontent.com/ddgksf2013/Scripts/master/rrtv_json.js | Official README marks this entry deprecated/unavailable
 #   15. [ACTIVE] via official 微博(轻享版)去广告 | https://github.com/ddgksf2013/Rewrite/raw/master/AdBlock/WeiboAds.conf
 #   16. [ACTIVE] via official 高德地图去广告 / [卸载重装] | https://github.com/ddgksf2013/Rewrite/raw/master/AdBlock/AmapAds.conf
@@ -65,7 +65,7 @@
 #   42. [CATALOG_ONLY] 更多应用去广告 | https://ddgksf2013.top | README directory/homepage entry; no single executable rule source
 # 应用增强: 13/13 cataloged, 10 active
 #   01. [DEPRECATED] B站自动换区[不适用新版] | https://github.com/ddgksf2013/Rewrite/raw/master/Function/BilibiliAutoRegion.conf | Official README marks this entry deprecated/unavailable
-#   02. [ACTIVE] via official B站CC繁体字幕转简体 | https://github.com/ddgksf2013/Rewrite/raw/master/Function/Bilibili_CC.conf
+#   02. [ACTIVE] via mirror B站CC繁体字幕转简体 | https://raw.githubusercontent.com/ifflagged/Romeo/main/Modules/Surge/ddgksf2013/Official/Bilibili_CC.conf
 #   03. [ACTIVE] via official Youtube无中文字幕机翻方案 | https://raw.githubusercontent.com/id77/QuantumultX/master/rewrite/Youtube_CC.conf#out=Hant |  unsupported-qx-line unsupported-qx-line
 #   04. [ACTIVE] via official 各种流媒体字幕翻译 | https://raw.githubusercontent.com/Neurogram-R/Quantumult-X/main/snippet/Dualsub.snippet
 #   05. [ACTIVE] via official 微信110解锁被屏蔽的URL | https://raw.githubusercontent.com/ddgksf2013/Rewrite/master/Function/UnblockURLinWeChat.conf
@@ -412,7 +412,7 @@ https://creative.live.missav\.(com|ai|ws)/widgets/Spot/lib.js _ reject
 ^https?:\/\/rich\.kuwo\.cn\/AdService data-type=text data="" status-code=200
 
 # ===== 广告屏蔽 1. 微信小程序去广告 =====
-# source: https://github.com/ddgksf2013/Rewrite/raw/master/AdBlock/Applet.conf
+# source: https://raw.githubusercontent.com/ifflagged/Romeo/main/Modules/Surge/ddgksf2013/Official/Applet.conf
 ^https?:\/\/api\.blibee\.com\/cvsnotify-api\/cvs\/notify\/app\/banner\/v\d+$ data-type=text data="" status-code=200
 ^https?:\/\/ucmp\.sf-express\.com\/proxy\/operation-platform\/info-flow-adver\/query$ data-type=text data="" status-code=200
 
@@ -924,7 +924,7 @@ https?:\/\/m\.sd\.10086\.cn\/zapi\/app_common\/homeWelcome\/welcome.do data-type
 ^https?:\/\/api\.gotokeep\.com\/anno\/v\d\/upgrade\/check data-type=text data="" status-code=200
 
 # ===== 广告屏蔽 12. 酷安去广告 =====
-# source: https://github.com/ddgksf2013/Scripts/raw/master/coolapk.js
+# source: https://raw.githubusercontent.com/ifflagged/Romeo/main/Modules/Surge/ddgksf2013/Official/coolapk.js
 ^https?:\/\/api\.coolapk\.com\/v6\/search\?.*type=hotSearch data-type=text data="" status-code=200
 
 # ===== 广告屏蔽 15. 微博(轻享版)去广告 =====
@@ -1087,7 +1087,7 @@ https://yun\.feidee\.net/cab-draw-activity-ws/terminal/v1/draw-record/user-draw-
 
 [Body Rewrite]
 # ===== 广告屏蔽 1. 微信小程序去广告 =====
-# source: https://github.com/ddgksf2013/Rewrite/raw/master/AdBlock/Applet.conf
+# source: https://raw.githubusercontent.com/ifflagged/Romeo/main/Modules/Surge/ddgksf2013/Official/Applet.conf
 http-response ^(http|https):\/\/mp\.weixin\.qq\.com\/mp\/getappmsgad advertisement ddgksf2013
 
 # ===== 广告屏蔽 2. 墨鱼去开屏2.0 =====
@@ -1278,7 +1278,7 @@ script_2 = ^https:\/\/isi\.csan.[a-z.]+\/.+\/(receipts|subscribers) url script-r
 script_3 = ^https?:\/\/notability\.com\/global url script-response-body https://ddgksf2013.top/scripts/goodbility.vip.js
 
 # ===== 广告屏蔽 1. 微信小程序去广告 =====
-# source: https://github.com/ddgksf2013/Rewrite/raw/master/AdBlock/Applet.conf
+# source: https://raw.githubusercontent.com/ifflagged/Romeo/main/Modules/Surge/ddgksf2013/Official/Applet.conf
 zhangshanggongjiao_js = type=http-response,pattern=^https?:\/\/wx\.mygolbs\.com\/WxBusServer\/ApiData\.do,script-path=https://raw.githubusercontent.com/ddgksf2013/Scripts/refs/heads/master/zhangshanggongjiao.js,requires-body=true
 applet_js = type=http-response,pattern="^(https?://)?([a-zA-Z0-9]+(-[a-zA-Z0-9]+)*\.)+[a-zA-Z]{2,}(:\d+)?/wp-json/[a-zA-Z0-9_-]+/(mp\/)?v\d/posts",script-path=https://raw.githubusercontent.com/ddgksf2013/Scripts/refs/heads/master/applet.js,requires-body=true
 
@@ -1384,7 +1384,7 @@ keepStyle_js_3 = type=http-response,pattern=^https?:\/\/api\.gotokeep\.com\/twin
 pixivAds_js = type=http-response,pattern=^https?:\/\/oauth\.secure\.pixiv\.net\/(auth\/token),script-path=https://github.com/ddgksf2013/Scripts/raw/master/pixivAds.js,requires-body=true
 
 # ===== 广告屏蔽 12. 酷安去广告 =====
-# source: https://github.com/ddgksf2013/Scripts/raw/master/coolapk.js
+# source: https://raw.githubusercontent.com/ifflagged/Romeo/main/Modules/Surge/ddgksf2013/Official/coolapk.js
 coolapk_js_3 = type=http-response,pattern=^https?:\/\/api\.coolapk\.com\/v6\/main\/init,script-path=https://github.com/ddgksf2013/Scripts/raw/master/coolapk.js,requires-body=true
 coolapk_js_4 = type=http-response,pattern=^https?:\/\/api\.coolapk\.com\/v6\/dataList,script-path=https://github.com/ddgksf2013/Scripts/raw/master/coolapk.js,requires-body=true
 coolapk_js_5 = type=http-response,pattern=^https?:\/\/api\.coolapk\.com\/v6\/main\/indexV8,script-path=https://github.com/ddgksf2013/Scripts/raw/master/coolapk.js,requires-body=true
@@ -1393,7 +1393,7 @@ coolapk_js_7 = type=http-response,pattern=^https?:\/\/api\.coolapk\.com\/v6\/fee
 coolapk_js_8 = type=http-response,pattern=https://api\.coolapk\.com/v6/page/dataList\?.*title=%E9%85,script-path=https://github.com/ddgksf2013/Scripts/raw/master/coolapk.js,requires-body=true
 
 # ===== 广告屏蔽 13. 12306去广告 =====
-# source: https://github.com/ddgksf2013/Scripts/raw/master/12306.js
+# source: https://raw.githubusercontent.com/ifflagged/Romeo/main/Modules/Surge/ddgksf2013/Official/12306.js
 12306_js_2 = type=http-response,pattern=^https?:\/\/ad\.12306\.cn\/ad\/ser\/getAdList,script-path=https://github.com/ddgksf2013/Scripts/raw/master/12306.js,requires-body=true
 
 # ===== 广告屏蔽 15. 微博(轻享版)去广告 =====
@@ -1555,7 +1555,7 @@ soutushenqi_vip_js_1 = type=http-response,pattern=^http?:\/\/wallpaper\.soutushe
 soutushenqi_vip_js_2 = type=http-response,pattern=^http?:\/\/wallpaper\.soutushenqi\.com\/api\/v\d\/account,script-path=https://ddgksf2013.top/scripts/soutushenqi.vip.js,requires-body=true
 
 # ===== 应用增强 2. B站CC繁体字幕转简体 =====
-# source: https://github.com/ddgksf2013/Rewrite/raw/master/Function/Bilibili_CC.conf
+# source: https://raw.githubusercontent.com/ifflagged/Romeo/main/Modules/Surge/ddgksf2013/Official/Bilibili_CC.conf
 bilibili_cc_js = type=http-response,pattern=^https?:\/\/.*\.hdslb\.com\/bfs\/subtitle\/.+\.json,script-path=https://raw.githubusercontent.com/ddgksf2013/Scripts/refs/heads/master/bilibili_cc.js,requires-body=true
 
 # ===== 应用增强 4. 各种流媒体字幕翻译 =====
